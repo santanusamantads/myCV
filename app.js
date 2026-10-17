@@ -5,23 +5,33 @@ const KEY = 'cv-data-v1';
 const DEFAULT_ORDER = ['about', 'experience', 'education', 'skills', 'projects', 'certifications', 'languages'];
 
 const DEFAULTS = {
-  profile: { name: 'Your Name', title: 'Your Job Title', summary: 'A short one-line intro about you.',
-             email: '', phone: '', location: '', photo: '' },
-  links: [{ label: 'GitHub', url: 'https://github.com/' }],
-  about: 'Write a paragraph about yourself here. Click “Edit” to change everything on this page.',
-  experience: [{ role: 'Software Engineer', company: 'Company Name', period: '2022 – Present',
-                 details: 'Built and shipped features\nImproved performance by 30%' }],
-  education: [{ degree: 'B.Tech in Computer Science', school: 'University Name', period: '2018 – 2022', details: '' }],
-  skills: [{ name: 'JavaScript', level: 85 }, { name: 'Python', level: 75 }],
-  projects: [{ name: 'Project One', link: '', description: 'What it does and why it matters.', tech: 'HTML, CSS, JS' }],
-  certifications: [{ name: 'Certification name', issuer: 'Issuer', year: '2024' }],
+  profile: { name: 'Santanu Samanta', title: 'M.Sc. Data Science and AI Student', summary: 'First-semester M.Sc. Data Science and Artificial Intelligence student with a B.Sc. background in Physics.',
+             email: '', phone: '', location: 'Belur, West Bengal, India', photo: '' },
+  links: [{ label: 'GitHub', url: 'https://github.com/santanusamantads' }],
+  about: 'First-semester M.Sc. Data Science and Artificial Intelligence student with a B.Sc. background in Physics. Building a strong foundation in machine learning, statistics, linear algebra, optimization, and data structures and algorithms. Hands-on experience implementing machine learning algorithms from scratch and working with regression and classification problems using Python.',
+  experience: [],
+  education: [
+    { degree: 'M.Sc. in Data Science and Artificial Intelligence', school: 'Ramakrishna Mission Vivekananda Educational and Research Institute (RKMVERI)', period: '2026 – 2028', details: 'Focus on Machine Learning, Statistical Inference, and AI' },
+    { degree: 'B.Sc. in Physics', school: 'Ramakrishna Mission Vivekananda Centenary College (RKMVCC), Rahara', period: '2026', details: 'CGPA: 7.24/10 (66.97%)' }
+  ],
+  skills: [
+    { name: 'Python', level: 0 },
+    { name: 'Machine Learning', level: 0 },
+    { name: 'Data Structures & Algorithms', level: 0 },
+    { name: 'Linear Algebra & Optimization', level: 0 }
+  ],
+  projects: [
+    { name: 'Custom Machine Learning Algorithms - From Scratch', link: '', description: 'Implemented KNN and multi-class Logistic Regression from scratch, building sigmoid functions, distance calculations, and gradient-descent optimization.', tech: 'Python' },
+    { name: 'Regularized Predictive Modeling', link: '', description: 'Built a regression workflow using polynomial features to model non-linear relationships and applied LASSO (L1) regularization.', tech: 'Python' }
+  ],
+  certifications: [],
   languages: [{ name: 'English', level: 90 }],
   settings: {
     accent: '#2563eb',
-    theme: 'light',
-    showLevels: false, // Set to true if you want progress bars & percentages
+    theme: 'dark',
+    showLevels: false,
     order: [...DEFAULT_ORDER],
-    show: { about: true, experience: true, education: true, skills: true, projects: true, certifications: true, languages: true }
+    show: { about: true, experience: false, education: true, skills: true, projects: true, certifications: false, languages: true }
   }
 };
 
