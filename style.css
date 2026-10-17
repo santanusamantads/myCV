@@ -13,7 +13,10 @@ button.danger{color:#d92d20}
 #nav a{text-decoration:none;color:var(--muted);font-size:.92rem}
 #nav a:hover{color:var(--accent)}
 .actions{display:flex;gap:.4rem}
-main{max-width:900px;margin:0 auto;padding:1.5rem 1rem 4rem}
+
+/* Dynamic widescreen container */
+main{width:94%;max-width:1560px;margin:0 auto;padding:1.5rem 1.2rem 4rem}
+
 section{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.5rem 1.7rem;margin-top:1.2rem}
 section h2{margin:0 0 1rem;font-size:1.15rem;letter-spacing:.04em;text-transform:uppercase;color:var(--accent)}
 .hero{display:flex;gap:1.8rem;align-items:center;flex-wrap:wrap;margin-top:0}
@@ -39,6 +42,7 @@ a.chip:hover{border-color:var(--accent);color:var(--accent)}
 .tags span{font-size:.78rem;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);padding:.1rem .55rem;border-radius:6px}
 .empty{color:var(--muted);font-style:italic}
 footer{text-align:center;color:var(--muted);font-size:.85rem;padding:2rem 1rem}
+
 /* editor */
 #editor{position:fixed;top:0;right:0;bottom:0;width:min(440px,100%);background:var(--card);border-left:1px solid var(--line);z-index:20;display:flex;flex-direction:column;box-shadow:-10px 0 30px #0003}
 #editor[hidden]{display:none}
@@ -57,6 +61,7 @@ textarea{min-height:90px;resize:vertical}
 .photo-row{display:flex;gap:1rem;align-items:center}
 .photo-row img{width:70px;height:70px;border-radius:50%;object-fit:cover}
 .switch{display:flex;align-items:center;gap:.5rem;font-size:.9rem;color:var(--text);margin:.2rem 0}
+
 @media print{
   .no-print{display:none!important}
   body{background:#fff;color:#000}
@@ -64,12 +69,14 @@ textarea{min-height:90px;resize:vertical}
   :root{--card:#fff;--text:#000;--muted:#444}
 }
 @media(max-width:600px){.hero{justify-content:center;text-align:center}.chips{justify-content:center}}
-/* GitHub-style Two-Column Layout */
+
+/* GitHub-style Fluid Two-Column Layout */
 @media (min-width: 820px) {
   #cv.layout-2col {
     display: flex;
-    gap: 2rem;
+    gap: 2.2rem;
     align-items: flex-start;
+    width: 100%;
   }
 
   /* When Sidebar is placed on the Right */
@@ -77,10 +84,11 @@ textarea{min-height:90px;resize:vertical}
     flex-direction: row-reverse;
   }
 
-  /* Sidebar Column */
+  /* Fluid Sidebar: Scales proportionally with a fixed min-width barrier */
   #cv.layout-2col .cv-sidebar {
-    width: 290px;
-    flex-shrink: 0;
+    flex: 0 0 25%;
+    min-width: 310px;
+    max-width: 360px;
     display: flex;
     flex-direction: column;
     gap: 1.2rem;
@@ -92,19 +100,19 @@ textarea{min-height:90px;resize:vertical}
     flex-direction: column;
     align-items: flex-start;
     text-align: left;
-    padding: 1.2rem;
+    padding: 1.5rem;
   }
 
   #cv.layout-2col .cv-sidebar .hero img,
   #cv.layout-2col .cv-sidebar .hero .avatar {
     width: 220px;
     height: 220px;
-    margin: 0 auto 0.5rem auto;
+    margin: 0 auto 0.8rem auto;
   }
 
-  /* Main Column */
+  /* Main Column: Flexibly expands to fill all remaining widescreen space */
   #cv.layout-2col .cv-main {
-    flex: 1;
+    flex: 1 1 0%;
     min-width: 0;
     display: flex;
     flex-direction: column;
