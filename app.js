@@ -46,7 +46,7 @@ const DEFAULTS = {
     theme: 'dark',
     sidebarLayout: 'left', // 'none' (stacked), 'left' (GitHub style), or 'right'
     sidebarSections: ['skills', 'languages'], // Sections placed in the sidebar column
-    attachLinksToAbout: false, // If true, links render inside the About card
+    linksPlacement: 'standalone', // 'standalone', 'profile', or 'about'
     order: [...DEFAULT_ORDER],
     show: { about: true, links: true, experience: false, education: true, skills: true, projects: true, certifications: false, languages: true }
   }
@@ -80,13 +80,13 @@ const merge = (base, over) => {
 };
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { alert('Could not save (storage full?). Use a smaller photo or download data.json.'); } };
 
-/* Helper to render links chips */
-function renderLinksHtml() {
-  if (!data.links || !data.links.length) return '<p class="empty">Nothing here yet.</p>';
-  return `<div class="chips" style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.6rem;">${data.links.map(l => {
+/* Helper to generate links chip tags */
+function getLinksChips() {
+  if (!data.links || !data.links.length) return '';
+  return data.links.map(l => {
     const u = safeUrl(l.url);
     return l.label ? (u ? `<a class="chip" href="${esc(u)}" target="_blank" rel="noopener">${esc(l.label)} ↗</a>` : `<span class="chip">${esc(l.label)}</span>`) : '';
-  }).join('')}</div>`;
+  }).join('');
 }
 
 /* ---------- Render CV ---------- */
@@ -95,17 +95,25 @@ function render() {
   if (!s.order) s.order = [...DEFAULT_ORDER];
   if (!s.sidebarSections) s.sidebarSections = ['skills', 'languages'];
   if (!s.sidebarLayout) s.sidebarLayout = 'left';
-  if (s.attachLinksToAbout === undefined) s.attachLinksToAbout = false;
+  if (!s.linksPlacement) s.linksPlacement = 'standalone';
 
   document.documentElement.style.setProperty('--accent', s.accent);
   document.documentElement.dataset.theme = s.theme;
   document.title = (p.name || 'CV') + ' – CV';
 
-  // Contact info chips stay attached to the Profile Hero card
+  // Contact info chips
   const chips = [];
   if (p.location) chips.push(`<span class="chip">📍 ${esc(p.location)}</span>`);
   if (p.email) chips.push(`<a class="chip" href="mailto:${esc(p.email)}">✉ ${esc(p.email)}</a>`);
   if (p.phone) chips.push(`<a class="chip" href="tel:${esc(p.phone)}">☎ ${esc(p.phone)}</a>`);
+
+  // If attached to Profile, append links directly inside the profile hero card
+  if (s.linksPlacement === 'profile' && s.show.links) {
+    data.links.forEach(l => {
+      const u = safeUrl(l.url);
+      if (l.label) chips.push(u ? `<a class="chip" href="${esc(u)}" target="_blank" rel="noopener">${esc(l.label)} ↗</a>` : `<span class="chip">${esc(l.label)}</span>`);
+    });
+  }
 
   const heroHtml = `<section class="hero" id="top">
     ${p.photo ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}">` : `<div class="avatar">👤</div>`}
@@ -113,9 +121,9 @@ function render() {
 
   const cvEl = $('#cv');
   
-  // If attached to About, exclude 'links' from standalone rendering
+  // If attached to Profile or About, exclude standalone links section from rendering
   let visible = s.order.filter(k => s.show[k]);
-  if (s.attachLinksToAbout) {
+  if (s.linksPlacement !== 'standalone') {
     visible = visible.filter(k => k !== 'links');
   }
 
@@ -148,14 +156,15 @@ function render() {
 function renderSection(k) {
   if (k === 'about') {
     let out = data.about ? `<p>${esc(data.about).replace(/\n/g, '<br>')}</p>` : '<p class="empty">Nothing here yet.</p>';
-    if (data.settings.attachLinksToAbout && data.settings.show.links) {
-      out += renderLinksHtml();
+    if (data.settings.linksPlacement === 'about' && data.settings.show.links) {
+      out += `<div class="chips" style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.8rem;">${getLinksChips()}</div>`;
     }
     return out;
   }
   
   if (k === 'links') {
-    return renderLinksHtml();
+    const content = getLinksChips();
+    return content ? `<div class="chips" style="display:flex; flex-wrap:wrap; gap:0.5rem;">${content}</div>` : '<p class="empty">Nothing here yet.</p>';
   }
 
   const list = data[k];
@@ -194,7 +203,7 @@ function buildEditor() {
   if (!s.order) s.order = [...DEFAULT_ORDER];
   if (!s.sidebarSections) s.sidebarSections = ['skills', 'languages'];
   if (!s.sidebarLayout) s.sidebarLayout = 'left';
-  if (s.attachLinksToAbout === undefined) s.attachLinksToAbout = false;
+  if (!s.linksPlacement) s.linksPlacement = 'standalone';
 
   let h = `<details open><summary>Profile</summary>
     <div class="photo-row"><img id="photoPrev" src="${esc(p.photo)}" alt="" ${p.photo ? '' : 'hidden'}>
@@ -205,7 +214,7 @@ function buildEditor() {
 
   h += `<details><summary>About</summary><label>About me</label><textarea data-about>${esc(data.about)}</textarea></details>`;
 
-  // Render all list-based sections
+  // List sections (Links, Experience, Education, Skills, Projects, etc.)
   for (const [k, def] of Object.entries(LISTS)) {
     h += `<details><summary>${def.title}</summary>` + data[k].map((item, i) => {
       let cardContent = def.fields.map(([f, label, type]) =>
@@ -246,30 +255,32 @@ function buildEditor() {
       <option value="none" ${s.sidebarLayout === 'none' ? 'selected' : ''}>Stacked (Single column)</option>
     </select>
 
-    <label style="margin-top:1rem; font-weight:600;">Links Section Options</label>
-    <label class="switch" style="font-size:0.85rem; margin-top:0.3rem;">
-      <input type="checkbox" id="chkAttachLinks" ${s.attachLinksToAbout ? 'checked' : ''}>
-      Attach links to About section (moves alongside About)
-    </label>
+    <label style="margin-top:1rem; font-weight:600;">Links Placement</label>
+    <label style="font-size:0.75rem; color:var(--muted);">Choose where your profile links appear</label>
+    <select id="linksPlacement">
+      <option value="standalone" ${s.linksPlacement === 'standalone' ? 'selected' : ''}>Independent section (Custom placement)</option>
+      <option value="profile" ${s.linksPlacement === 'profile' ? 'selected' : ''}>Attach to Profile section</option>
+      <option value="about" ${s.linksPlacement === 'about' ? 'selected' : ''}>Attach to About section</option>
+    </select>
 
     <label style="margin-top:1rem; font-weight:600;">Sections Position & Order</label>
     <p style="font-size:0.75rem; color:var(--muted); margin:0.2rem 0 0.5rem 0;">Check "Sidebar" to place any section on the side column.</p>
     <div style="display:flex; flex-direction:column; gap:0.4rem;">
       ${s.order.map((k, i) => {
         const inSide = s.sidebarSections.includes(k);
-        const isLinksDisabled = (k === 'links' && s.attachLinksToAbout);
+        const isLinksAttached = (k === 'links' && s.linksPlacement !== 'standalone');
         return `
-        <div style="display:flex; align-items:center; justify-content:space-between; padding:6px 8px; background:rgba(128,128,128,0.1); border-radius:6px; ${isLinksDisabled ? 'opacity:0.5;' : ''}">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:6px 8px; background:rgba(128,128,128,0.1); border-radius:6px; ${isLinksAttached ? 'opacity:0.5;' : ''}">
           <div style="display:flex; align-items:center; gap:8px;">
-            <label class="switch" style="margin:0;"><input type="checkbox" data-show="${k}" ${s.show[k] ? 'checked' : ''} ${isLinksDisabled ? 'disabled' : ''}> <strong>${TITLES[k]}</strong></label>
+            <label class="switch" style="margin:0;"><input type="checkbox" data-show="${k}" ${s.show[k] ? 'checked' : ''} ${isLinksAttached ? 'disabled' : ''}> <strong>${TITLES[k]}</strong></label>
             <label class="switch" style="margin:0; font-size:0.75rem; color:var(--muted); cursor:pointer;">
-              <input type="checkbox" data-act="toggle-side" data-sec="${k}" ${inSide ? 'checked' : ''} ${isLinksDisabled ? 'disabled' : ''}>
+              <input type="checkbox" data-act="toggle-side" data-sec="${k}" ${inSide ? 'checked' : ''} ${isLinksAttached ? 'disabled' : ''}>
               Sidebar
             </label>
           </div>
           <div style="display:flex; gap:4px;">
-            <button data-act="sec-up" data-i="${i}" ${i === 0 || isLinksDisabled ? 'disabled' : ''} style="padding:2px 8px;">↑</button>
-            <button data-act="sec-down" data-i="${i}" ${i === s.order.length - 1 || isLinksDisabled ? 'disabled' : ''} style="padding:2px 8px;">↓</button>
+            <button data-act="sec-up" data-i="${i}" ${i === 0 || isLinksAttached ? 'disabled' : ''} style="padding:2px 8px;">↑</button>
+            <button data-act="sec-down" data-i="${i}" ${i === s.order.length - 1 || isLinksAttached ? 'disabled' : ''} style="padding:2px 8px;">↓</button>
           </div>
         </div>
       `}).join('')}
@@ -304,8 +315,8 @@ function wireEditor() {
     else if (t.id === 'accent') data.settings.accent = t.value;
     else if (t.id === 'theme') data.settings.theme = t.value;
     else if (t.id === 'sidebarLayout') data.settings.sidebarLayout = t.value;
-    else if (t.id === 'chkAttachLinks') {
-      data.settings.attachLinksToAbout = t.checked;
+    else if (t.id === 'linksPlacement') {
+      data.settings.linksPlacement = t.value;
       buildEditor();
     }
     else if (t.dataset.show) data.settings.show[t.dataset.show] = t.checked;
