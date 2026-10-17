@@ -37,11 +37,15 @@ const DEFAULTS = {
   ],
   certifications: [],
   languages: [
-    { name: 'English', showLevel: false, level: 90 }
+    { name: 'English', showLevel: false, level: 90 },
+    { name: 'Bengali', showLevel: false, level: 95 },
+    { name: 'Hindi', showLevel: false, level: 85 }
   ],
   settings: {
     accent: '#2563eb',
     theme: 'dark',
+    sidebarLayout: 'left', // 'none' (stacked), 'left' (GitHub style), or 'right'
+    sidebarSections: ['skills', 'languages'], // Sections placed under the profile in the sidebar
     order: [...DEFAULT_ORDER],
     show: { about: true, experience: false, education: true, skills: true, projects: true, certifications: false, languages: true }
   }
@@ -78,6 +82,8 @@ const save = () => { try { localStorage.setItem(KEY, JSON.stringify(data)); } ca
 function render() {
   const p = data.profile, s = data.settings;
   if (!s.order) s.order = [...DEFAULT_ORDER];
+  if (!s.sidebarSections) s.sidebarSections = ['skills', 'languages'];
+  if (!s.sidebarLayout) s.sidebarLayout = 'left';
 
   document.documentElement.style.setProperty('--accent', s.accent);
   document.documentElement.dataset.theme = s.theme;
@@ -89,13 +95,36 @@ function render() {
   if (p.phone) chips.push(`<a class="chip" href="tel:${esc(p.phone)}">☎ ${esc(p.phone)}</a>`);
   data.links.forEach(l => { const u = safeUrl(l.url); if (l.label) chips.push(u ? `<a class="chip" href="${esc(u)}" target="_blank" rel="noopener">${esc(l.label)} ↗</a>` : `<span class="chip">${esc(l.label)}</span>`); });
 
-  let html = `<section class="hero" id="top">
+  const heroHtml = `<section class="hero" id="top">
     ${p.photo ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}">` : `<div class="avatar">👤</div>`}
     <div><h1>${esc(p.name)}</h1><div class="title">${esc(p.title)}</div><p>${esc(p.summary)}</p><div class="chips">${chips.join('')}</div></div></section>`;
 
+  const cvEl = $('#cv');
   const visible = s.order.filter(k => s.show[k]);
-  for (const k of visible) html += `<section id="${k}"><h2>${TITLES[k]}</h2>${renderSection(k)}</section>`;
-  $('#cv').innerHTML = html;
+
+  if (s.sidebarLayout === 'none') {
+    cvEl.className = '';
+    let html = heroHtml;
+    for (const k of visible) html += `<section id="${k}"><h2>${TITLES[k]}</h2>${renderSection(k)}</section>`;
+    cvEl.innerHTML = html;
+  } else {
+    cvEl.className = `layout-2col sidebar-${s.sidebarLayout}`;
+    
+    // Split visible sections into sidebar and main
+    const sideKeys = visible.filter(k => s.sidebarSections.includes(k));
+    const mainKeys = visible.filter(k => !s.sidebarSections.includes(k));
+
+    let sideHtml = `<div class="cv-sidebar">${heroHtml}`;
+    for (const k of sideKeys) sideHtml += `<section id="${k}"><h2>${TITLES[k]}</h2>${renderSection(k)}</section>`;
+    sideHtml += `</div>`;
+
+    let mainHtml = `<div class="cv-main">`;
+    for (const k of mainKeys) mainHtml += `<section id="${k}"><h2>${TITLES[k]}</h2>${renderSection(k)}</section>`;
+    mainHtml += `</div>`;
+
+    cvEl.innerHTML = sideHtml + mainHtml;
+  }
+
   $('#nav').innerHTML = visible.map(k => `<a href="#${k}">${TITLES[k]}</a>`).join('');
 }
 
@@ -135,6 +164,8 @@ const input = (label, val, attrs = '') => `<label>${label}</label><input type="t
 function buildEditor() {
   const p = data.profile, s = data.settings;
   if (!s.order) s.order = [...DEFAULT_ORDER];
+  if (!s.sidebarSections) s.sidebarSections = ['skills', 'languages'];
+  if (!s.sidebarLayout) s.sidebarLayout = 'left';
 
   let h = `<details open><summary>Profile</summary>
     <div class="photo-row"><img id="photoPrev" src="${esc(p.photo)}" alt="" ${p.photo ? '' : 'hidden'}>
@@ -175,9 +206,27 @@ function buildEditor() {
     + `<button data-act="add" data-list="${k}">+ Add ${def.title.toLowerCase()} entry</button></details>`;
   }
 
-  h += `<details><summary>Appearance & sections</summary>
+  h += `<details><summary>Appearance & layout</summary>
     <label>Accent colour</label><input type="color" id="accent" value="${esc(s.accent)}">
     <label>Theme</label><select id="theme"><option value="light">Light</option><option value="dark">Dark</option></select>
+
+    <label style="margin-top:1rem; font-weight:600;">Layout Style</label>
+    <label style="font-size:0.75rem; color:var(--muted);">Profile & sidebar position</label>
+    <select id="sidebarLayout">
+      <option value="left" ${s.sidebarLayout === 'left' ? 'selected' : ''}>Sidebar Left (GitHub style)</option>
+      <option value="right" ${s.sidebarLayout === 'right' ? 'selected' : ''}>Sidebar Right</option>
+      <option value="none" ${s.sidebarLayout === 'none' ? 'selected' : ''}>Stacked (Single column)</option>
+    </select>
+
+    <label style="margin-top:1rem; font-weight:600;">Sections in Sidebar</label>
+    <div style="display:flex; flex-direction:column; gap:0.3rem;">
+      ${ORDER_KEYS = ['skills', 'languages', 'about'], ORDER_KEYS.map(k => `
+        <label class="switch" style="font-size:0.85rem;">
+          <input type="checkbox" data-act="sidebar-toggle" data-sec="${k}" ${s.sidebarSections.includes(k) ? 'checked' : ''}>
+          Place ${TITLES[k]} in sidebar
+        </label>
+      `).join('')}
+    </div>
 
     <label style="margin-top:1rem; font-weight:600;">Section Order & Visibility</label>
     <div style="display:flex; flex-direction:column; gap:0.4rem; margin-top:0.3rem;">
@@ -221,6 +270,7 @@ function wireEditor() {
     else if (t.dataset.list) data[t.dataset.list][+t.dataset.i][t.dataset.f] = t.type === 'number' ? Number(t.value) : t.value;
     else if (t.id === 'accent') data.settings.accent = t.value;
     else if (t.id === 'theme') data.settings.theme = t.value;
+    else if (t.id === 'sidebarLayout') data.settings.sidebarLayout = t.value;
     else if (t.dataset.show) data.settings.show[t.dataset.show] = t.checked;
     else return;
     save(); render();
@@ -232,6 +282,14 @@ function wireEditor() {
       data[k][i].showLevel = t.checked;
       const box = document.getElementById(`lvl-box-${k}-${i}`);
       if (box) box.style.display = t.checked ? 'block' : 'none';
+      save(); render();
+    } else if (t.dataset.act === 'sidebar-toggle') {
+      const sec = t.dataset.sec;
+      if (t.checked && !data.settings.sidebarSections.includes(sec)) {
+        data.settings.sidebarSections.push(sec);
+      } else if (!t.checked) {
+        data.settings.sidebarSections = data.settings.sidebarSections.filter(x => x !== sec);
+      }
       save(); render();
     } else if (t.id === 'photoFile' && t.files[0]) {
       try { data.profile.photo = await resizeImage(t.files[0]); save(); render(); buildEditor(); keepOpen(); }
