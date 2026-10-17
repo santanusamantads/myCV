@@ -1,0 +1,78 @@
+{
+  "profile": {
+    "name": "Your Name",
+    "title": "Your Job Title",
+    "summary": "A short one-line intro about you.",
+    "email": "",
+    "phone": "",
+    "location": "",
+    "photo": ""
+  },
+  "links": [
+    {
+      "label": "GitHub",
+      "url": "https://github.com/"
+    }
+  ],
+  "about": "Write a paragraph about yourself here. Click “Edit” to change everything on this page.",
+  "experience": [
+    {
+      "role": "Software Engineer",
+      "company": "Company Name",
+      "period": "2022 – Present",
+      "details": "Built and shipped features\nImproved performance by 30%"
+    }
+  ],
+  "education": [
+    {
+      "degree": "B.Tech in Computer Science",
+      "school": "University Name",
+      "period": "2018 – 2022",
+      "details": ""
+    }
+  ],
+  "skills": [
+    {
+      "name": "JavaScript",
+      "level": 85
+    },
+    {
+      "name": "Python",
+      "level": 75
+    }
+  ],
+  "projects": [
+    {
+      "name": "Project One",
+      "link": "",
+      "description": "What it does and why it matters.",
+      "tech": "HTML, CSS, JS"
+    }
+  ],
+  "certifications": [
+    {
+      "name": "Certification name",
+      "issuer": "Issuer",
+      "year": "2024"
+    }
+  ],
+  "languages": [
+    {
+      "name": "English",
+      "level": 90
+    }
+  ],
+  "settings": {
+    "accent": "#2563eb",
+    "theme": "light",
+    "show": {
+      "about": true,
+      "experience": true,
+      "education": true,
+      "skills": true,
+      "projects": true,
+      "certifications": true,
+      "languages": true
+    }
+  }
+}

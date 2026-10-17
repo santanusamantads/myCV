@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My CV</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar no-print">
+  <nav id="nav"></nav>
+  <div class="actions">
+    <button id="btnTheme" title="Toggle dark / light">◐</button>
+    <button id="btnPrint" title="Print or save as PDF">PDF</button>
+    <button id="btnEdit" class="primary">✎ Edit</button>
+  </div>
+</header>
+
+<main id="cv"></main>
+<footer class="no-print">Built with plain HTML/CSS/JS · hosted on GitHub Pages</footer>
+
+<!-- Editor drawer -->
+<aside id="editor" class="no-print" hidden>
+  <div class="ed-head">
+    <strong>Edit CV</strong>
+    <button id="btnClose">✕</button>
+  </div>
+  <div class="ed-body" id="edBody"></div>
+  <div class="ed-foot">
+    <button id="btnExport" class="primary">⬇ Download data.json</button>
+    <button id="btnImport">⬆ Import</button>
+    <button id="btnReset" class="danger">Reset</button>
+    <input type="file" id="fileImport" accept="application/json" hidden>
+    <p class="hint">Changes auto-save in this browser. To publish them for everyone, download <code>data.json</code>, put it in your repo and commit.</p>
+  </div>
+</aside>
+
+<script src="app.js"></script>
+</body>
+</html>
