@@ -15,10 +15,10 @@ const DEFAULTS = {
     { degree: 'B.Sc. in Physics', school: 'Ramakrishna Mission Vivekananda Centenary College (RKMVCC), Rahara', period: '2026', details: 'CGPA: 7.24/10 (66.97%)' }
   ],
   skills: [
-    { name: 'Python', level: 0 },
-    { name: 'Machine Learning', level: 0 },
-    { name: 'Data Structures & Algorithms', level: 0 },
-    { name: 'Linear Algebra & Optimization', level: 0 }
+    { name: 'Python', level: '' },
+    { name: 'Machine Learning', level: '' },
+    { name: 'Data Structures & Algorithms', level: '' },
+    { name: 'Linear Algebra & Optimization', level: '' }
   ],
   projects: [
     { name: 'Custom Machine Learning Algorithms - From Scratch', link: '', description: 'Implemented KNN and multi-class Logistic Regression from scratch, building sigmoid functions, distance calculations, and gradient-descent optimization.', tech: 'Python' },
@@ -39,10 +39,10 @@ const DEFAULTS = {
 const LISTS = {
   experience:     { title: 'Experience',     fields: [['role','Role'],['company','Company'],['period','Period'],['details','Details (one bullet per line)','area']] },
   education:      { title: 'Education',      fields: [['degree','Degree'],['school','School'],['period','Period'],['details','Details (one bullet per line)','area']] },
-  skills:         { title: 'Skills',         fields: [['name','Skill'],['level','Level 0-100','num']] },
+  skills:         { title: 'Skills',         fields: [['name','Skill'],['level','Level 0-100 (leave empty or 0 to hide %)','num']] },
   projects:       { title: 'Projects',       fields: [['name','Name'],['link','Link (https://…)'],['description','Description','area'],['tech','Tech (comma separated)']] },
   certifications: { title: 'Certifications', fields: [['name','Name'],['issuer','Issuer'],['year','Year']] },
-  languages:      { title: 'Languages',      fields: [['name','Language'],['level','Level 0-100','num']] }
+  languages:      { title: 'Languages',      fields: [['name','Language'],['level','Level 0-100 (leave empty or 0 to hide %)','num']] }
 };
 const TITLES = { about: 'About', ...Object.fromEntries(Object.entries(LISTS).map(([k, v]) => [k, v.title])) };
 
@@ -95,9 +95,19 @@ function renderSection(k) {
   const bullets = d => lines(d).length ? `<ul>${lines(d).map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
 
   if (k === 'skills' || k === 'languages') {
-    if (data.settings.showLevels) {
-      return `<div class="grid">${list.map(i => `<div><div class="row" style="display:flex;justify-content:space-between"><span>${esc(i.name)}</span><span class="when">${+i.level || 0}%</span></div><div class="bar"><i style="width:${Math.min(100, Math.max(0, +i.level || 0))}%"></i></div></div>`).join('')}</div>`;
+    // If showLevels is disabled globally OR if item level is 0/empty, render as clean badges
+    const hasAnyLevels = data.settings.showLevels && list.some(i => Number(i.level) > 0);
+
+    if (hasAnyLevels) {
+      return `<div class="grid">${list.map(i => {
+        const lvl = Number(i.level) || 0;
+        if (lvl <= 0) {
+          return `<div style="display:flex; align-items:center;"><span class="chip" style="font-size:0.95rem; padding:0.35rem 0.8rem;">${esc(i.name)}</span></div>`;
+        }
+        return `<div><div class="row" style="display:flex;justify-content:space-between"><span>${esc(i.name)}</span><span class="when">${lvl}%</span></div><div class="bar"><i style="width:${Math.min(100, Math.max(0, lvl))}%"></i></div></div>`;
+      }).join('')}</div>`;
     }
+
     return `<div class="chips" style="display:flex; flex-wrap:wrap; gap:0.5rem;">${list.map(i => `<span class="chip" style="font-size:0.95rem; padding:0.4rem 0.8rem;">${esc(i.name)}</span>`).join('')}</div>`;
   }
 
@@ -131,7 +141,7 @@ function buildEditor() {
   for (const [k, def] of Object.entries(LISTS)) {
     h += `<details><summary>${def.title}</summary>` + data[k].map((item, i) => `<div class="card">` + def.fields.map(([f, label, type]) =>
       type === 'area' ? `<label>${label}</label><textarea data-list="${k}" data-i="${i}" data-f="${f}">${esc(item[f])}</textarea>`
-      : `<label>${label}</label><input type="${type === 'num' ? 'number' : 'text'}" ${type === 'num' ? 'min="0" max="100"' : ''} value="${esc(item[f])}" data-list="${k}" data-i="${i}" data-f="${f}">`).join('')
+      : `<label>${label}</label><input type="${type === 'num' ? 'number' : 'text'}" ${type === 'num' ? 'min="0" max="100" placeholder="Optional (0 or blank)"' : ''} value="${item[f] === 0 || item[f] ? esc(item[f]) : ''}" data-list="${k}" data-i="${i}" data-f="${f}">`).join('')
       + `<div class="tools"><button data-act="up" data-list="${k}" data-i="${i}">↑</button><button data-act="down" data-list="${k}" data-i="${i}">↓</button><button data-act="del" data-list="${k}" data-i="${i}">Delete</button></div></div>`).join('')
       + `<button data-act="add" data-list="${k}">+ Add ${def.title.toLowerCase()} entry</button></details>`;
   }
@@ -182,7 +192,13 @@ function wireEditor() {
     if (t.dataset.p) data.profile[t.dataset.p] = t.value;
     else if (t.dataset.l !== undefined) data.links[+t.dataset.l][t.dataset.f] = t.value;
     else if ('about' in t.dataset) data.about = t.value;
-    else if (t.dataset.list) data[t.dataset.list][+t.dataset.i][t.dataset.f] = t.type === 'number' ? Number(t.value) : t.value;
+    else if (t.dataset.list) {
+      if (t.type === 'number') {
+        data[t.dataset.list][+t.dataset.i][t.dataset.f] = t.value === '' ? '' : Number(t.value);
+      } else {
+        data[t.dataset.list][+t.dataset.i][t.dataset.f] = t.value;
+      }
+    }
     else if (t.id === 'accent') data.settings.accent = t.value;
     else if (t.id === 'theme') data.settings.theme = t.value;
     else if (t.id === 'chkShowLevels') data.settings.showLevels = t.checked;
@@ -206,7 +222,7 @@ function wireEditor() {
     }
     else if (b.dataset.act) {
       const k = b.dataset.list, i = +b.dataset.i, arr = data[k];
-      if (b.dataset.act === 'add') arr.push(k === 'links' ? { label: '', url: '' } : Object.fromEntries(LISTS[k].fields.map(([f, , t]) => [f, t === 'num' ? 50 : ''])));
+      if (b.dataset.act === 'add') arr.push(k === 'links' ? { label: '', url: '' } : Object.fromEntries(LISTS[k].fields.map(([f, , t]) => [f, t === 'num' ? '' : ''])));
       if (b.dataset.act === 'del') arr.splice(i, 1);
       if (b.dataset.act === 'up' && i > 0) [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]];
       if (b.dataset.act === 'down' && i < arr.length - 1) [arr[i + 1], arr[i]] = [arr[i], arr[i + 1]];
