@@ -25,12 +25,15 @@ main {
 #cv {
   width: 100% !important;
 }
+
 section{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.5rem 1.7rem;margin-top:1.2rem}
 section h2{margin:0 0 1rem;font-size:1.15rem;letter-spacing:.04em;text-transform:uppercase;color:var(--accent)}
 .hero{display:flex;gap:1.8rem;align-items:center;flex-wrap:wrap;margin-top:0}
 .hero img,.avatar{width:160px;height:160px;border-radius:50%;object-fit:cover;border:4px solid var(--accent);background:var(--line)}
 .avatar{display:grid;place-items:center;font-size:3rem;color:var(--muted)}
-.hero h1{margin:0;font-size:2.2rem;line-height:1.15}
+
+/* Fit name on a single line */
+.hero h1{margin:0;font-size:1.75rem;line-height:1.2;white-space:nowrap}
 .hero .title{color:var(--accent);font-size:1.15rem;margin:.2rem 0 .6rem}
 .hero p{margin:.3rem 0;color:var(--muted)}
 .chips{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.8rem}
@@ -79,7 +82,6 @@ textarea{min-height:90px;resize:vertical}
 @media(max-width:600px){.hero{justify-content:center;text-align:center}.chips{justify-content:center}}
 
 /* GitHub-style Fluid Two-Column Layout */
-/* GitHub-style Fluid Two-Column Layout */
 @media (min-width: 820px) {
   #cv.layout-2col {
     display: flex !important;
@@ -93,7 +95,7 @@ textarea{min-height:90px;resize:vertical}
     flex-direction: row-reverse !important;
   }
 
-  /* Sidebar: Minimum 300px, but flexes proportionally */
+  /* Sidebar: Minimum 280px, scales up to 340px */
   #cv.layout-2col .cv-sidebar {
     flex: 0 0 290px !important;
     min-width: 280px !important;
@@ -117,6 +119,11 @@ textarea{min-height:90px;resize:vertical}
     width: 200px !important;
     height: 200px !important;
     margin: 0 auto 0.8rem auto !important;
+  }
+
+  #cv.layout-2col .cv-sidebar .hero h1 {
+    font-size: 1.65rem !important;
+    white-space: nowrap !important;
   }
 
   /* Main Column: Takes ALL remaining space across the entire screen */
