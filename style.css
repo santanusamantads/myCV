@@ -33,7 +33,18 @@ section h2{margin:0 0 1rem;font-size:1.15rem;letter-spacing:.04em;text-transform
 .avatar{display:grid;place-items:center;font-size:3rem;color:var(--muted)}
 
 /* Fit name on a single line */
-.hero h1{margin:0;font-size:1.75rem;line-height:1.2;white-space:nowrap}
+.hero h1,
+#cv .hero h1,
+.cv-sidebar .hero h1 {
+  margin: 0 !important;
+  font-size: clamp(1.2rem, 1.8vw, 1.55rem) !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  overflow: visible !important;
+  display: block !important;
+  width: 100% !important;
+}
 .hero .title{color:var(--accent);font-size:1.15rem;margin:.2rem 0 .6rem}
 .hero p{margin:.3rem 0;color:var(--muted)}
 .chips{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.8rem}
