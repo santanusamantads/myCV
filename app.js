@@ -45,7 +45,7 @@ const DEFAULTS = {
     accent: '#2563eb',
     theme: 'dark',
     sidebarLayout: 'left', // 'none' (stacked), 'left' (GitHub style), or 'right'
-    sidebarSections: ['skills', 'languages'], // Sections placed under the profile in the sidebar
+    sidebarSections: ['skills', 'languages'], // Any section listed here renders in the sidebar column
     order: [...DEFAULT_ORDER],
     show: { about: true, experience: false, education: true, skills: true, projects: true, certifications: false, languages: true }
   }
@@ -110,7 +110,7 @@ function render() {
   } else {
     cvEl.className = `layout-2col sidebar-${s.sidebarLayout}`;
     
-    // Split visible sections into sidebar and main
+    // Divide into sidebar vs main column
     const sideKeys = visible.filter(k => s.sidebarSections.includes(k));
     const mainKeys = visible.filter(k => !s.sidebarSections.includes(k));
 
@@ -210,35 +210,34 @@ function buildEditor() {
     <label>Accent colour</label><input type="color" id="accent" value="${esc(s.accent)}">
     <label>Theme</label><select id="theme"><option value="light">Light</option><option value="dark">Dark</option></select>
 
-    <label style="margin-top:1rem; font-weight:600;">Layout Style</label>
-    <label style="font-size:0.75rem; color:var(--muted);">Profile & sidebar position</label>
+    <label style="margin-top:1rem; font-weight:600;">Overall Layout</label>
+    <label style="font-size:0.75rem; color:var(--muted);">Sidebar placement</label>
     <select id="sidebarLayout">
       <option value="left" ${s.sidebarLayout === 'left' ? 'selected' : ''}>Sidebar Left (GitHub style)</option>
       <option value="right" ${s.sidebarLayout === 'right' ? 'selected' : ''}>Sidebar Right</option>
       <option value="none" ${s.sidebarLayout === 'none' ? 'selected' : ''}>Stacked (Single column)</option>
     </select>
 
-    <label style="margin-top:1rem; font-weight:600;">Sections in Sidebar</label>
-    <div style="display:flex; flex-direction:column; gap:0.3rem;">
-      ${ORDER_KEYS = ['skills', 'languages', 'about'], ORDER_KEYS.map(k => `
-        <label class="switch" style="font-size:0.85rem;">
-          <input type="checkbox" data-act="sidebar-toggle" data-sec="${k}" ${s.sidebarSections.includes(k) ? 'checked' : ''}>
-          Place ${TITLES[k]} in sidebar
-        </label>
-      `).join('')}
-    </div>
-
-    <label style="margin-top:1rem; font-weight:600;">Section Order & Visibility</label>
-    <div style="display:flex; flex-direction:column; gap:0.4rem; margin-top:0.3rem;">
-      ${s.order.map((k, i) => `
-        <div style="display:flex; align-items:center; justify-content:space-between; padding:4px 8px; background:rgba(128,128,128,0.1); border-radius:4px;">
-          <label class="switch" style="margin:0;"><input type="checkbox" data-show="${k}" ${s.show[k] ? 'checked' : ''}>${TITLES[k]}</label>
+    <label style="margin-top:1rem; font-weight:600;">Sections Position & Order</label>
+    <p style="font-size:0.75rem; color:var(--muted); margin:0.2rem 0 0.5rem 0;">Toggle "Sidebar" to place any section on the side column.</p>
+    <div style="display:flex; flex-direction:column; gap:0.4rem;">
+      ${s.order.map((k, i) => {
+        const inSide = s.sidebarSections.includes(k);
+        return `
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:6px 8px; background:rgba(128,128,128,0.1); border-radius:6px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <label class="switch" style="margin:0;"><input type="checkbox" data-show="${k}" ${s.show[k] ? 'checked' : ''}> <strong>${TITLES[k]}</strong></label>
+            <label class="switch" style="margin:0; font-size:0.75rem; color:var(--muted); cursor:pointer;">
+              <input type="checkbox" data-act="toggle-side" data-sec="${k}" ${inSide ? 'checked' : ''}>
+              Sidebar
+            </label>
+          </div>
           <div style="display:flex; gap:4px;">
             <button data-act="sec-up" data-i="${i}" ${i === 0 ? 'disabled' : ''} style="padding:2px 8px;">↑</button>
             <button data-act="sec-down" data-i="${i}" ${i === s.order.length - 1 ? 'disabled' : ''} style="padding:2px 8px;">↓</button>
           </div>
         </div>
-      `).join('')}
+      `}).join('')}
     </div>
   </details>`;
 
@@ -283,7 +282,7 @@ function wireEditor() {
       const box = document.getElementById(`lvl-box-${k}-${i}`);
       if (box) box.style.display = t.checked ? 'block' : 'none';
       save(); render();
-    } else if (t.dataset.act === 'sidebar-toggle') {
+    } else if (t.dataset.act === 'toggle-side') {
       const sec = t.dataset.sec;
       if (t.checked && !data.settings.sidebarSections.includes(sec)) {
         data.settings.sidebarSections.push(sec);
