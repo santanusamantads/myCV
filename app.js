@@ -2,13 +2,13 @@
    Data priority: browser localStorage (your edits)  >  data.json (published)  >  DEFAULTS below. */
 const KEY = 'cv-data-v1';
 
-const DEFAULT_ORDER = ['about', 'experience', 'education', 'skills', 'projects', 'certifications', 'languages'];
+const DEFAULT_ORDER = ['about', 'links', 'experience', 'education', 'skills', 'projects', 'certifications', 'languages'];
 
 const DEFAULTS = {
   profile: {
     name: 'Santanu Samanta',
     title: 'M.Sc. Data Science and AI Student',
-    summary: 'First-semester M.Sc. Data Science and Artificial Intelligence student with a B.Sc. background in Physics. Building a strong foundation in machine learning, statistics, linear algebra, optimization, and data structures and algorithms.',
+    summary: 'First-semester M.Sc. Data Science & AI student with a B.Sc. in Physics. Strong foundation in machine learning, mathematical optimization, and algorithms, with hands-on experience implementing ML models from scratch.',
     email: 'santanusamanta97330795@gmail.com',
     phone: '',
     location: 'Belur, West Bengal, India',
@@ -19,7 +19,7 @@ const DEFAULTS = {
     { label: 'LinkedIn', url: 'https://linkedin.com/in/santanusamantads' },
     { label: 'Kaggle', url: 'https://kaggle.com/shyamsantanu01122004' }
   ],
-  about: 'First-semester M.Sc. Data Science and Artificial Intelligence student with a B.Sc. background in Physics. Building a strong foundation in machine learning, statistics, linear algebra, optimization, and data structures and algorithms. Hands-on experience implementing machine learning algorithms from scratch and working with regression and classification problems using Python.',
+  about: 'I am a first-semester M.Sc. Data Science and Artificial Intelligence student at Ramakrishna Mission Vivekananda Educational and Research Institute (RKMVERI), with a strong foundational background in Physics from RKMVCC Rahara. My academic interests center around statistical inference, mathematical optimization, linear algebra, and data structures & algorithms. I actively focus on building machine learning algorithms from scratch—including KNN and multi-class Logistic Regression with gradient descent optimization—and applying regularized predictive modeling (LASSO) to complex datasets.',
   experience: [],
   education: [
     { degree: 'M.Sc. in Data Science and Artificial Intelligence', school: 'Ramakrishna Mission Vivekananda Educational and Research Institute (RKMVERI)', period: '2026 – 2028', details: 'Focus on Machine Learning, Statistical Inference, and AI' },
@@ -45,14 +45,16 @@ const DEFAULTS = {
     accent: '#2563eb',
     theme: 'dark',
     sidebarLayout: 'left', // 'none' (stacked), 'left' (GitHub style), or 'right'
-    sidebarSections: ['skills', 'languages'], // Any section listed here renders in the sidebar column
+    sidebarSections: ['skills', 'languages'], // Sections placed in the sidebar column
+    attachLinksToAbout: false, // If true, links render inside the About card
     order: [...DEFAULT_ORDER],
-    show: { about: true, experience: false, education: true, skills: true, projects: true, certifications: false, languages: true }
+    show: { about: true, links: true, experience: false, education: true, skills: true, projects: true, certifications: false, languages: true }
   }
 };
 
 /* Section definitions: drives both rendering and the editor form */
 const LISTS = {
+  links:          { title: 'Links & Profiles', fields: [['label','Label'],['url','URL (https://…)']] },
   experience:     { title: 'Experience',     fields: [['role','Role'],['company','Company'],['period','Period'],['details','Details (one bullet per line)','area']] },
   education:      { title: 'Education',      fields: [['degree','Degree'],['school','School'],['period','Period'],['details','Details (one bullet per line)','area']] },
   skills:         { title: 'Skills',         fields: [['name','Skill']] },
@@ -78,29 +80,44 @@ const merge = (base, over) => {
 };
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { alert('Could not save (storage full?). Use a smaller photo or download data.json.'); } };
 
+/* Helper to render links chips */
+function renderLinksHtml() {
+  if (!data.links || !data.links.length) return '<p class="empty">Nothing here yet.</p>';
+  return `<div class="chips" style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.6rem;">${data.links.map(l => {
+    const u = safeUrl(l.url);
+    return l.label ? (u ? `<a class="chip" href="${esc(u)}" target="_blank" rel="noopener">${esc(l.label)} ↗</a>` : `<span class="chip">${esc(l.label)}</span>`) : '';
+  }).join('')}</div>`;
+}
+
 /* ---------- Render CV ---------- */
 function render() {
   const p = data.profile, s = data.settings;
   if (!s.order) s.order = [...DEFAULT_ORDER];
   if (!s.sidebarSections) s.sidebarSections = ['skills', 'languages'];
   if (!s.sidebarLayout) s.sidebarLayout = 'left';
+  if (s.attachLinksToAbout === undefined) s.attachLinksToAbout = false;
 
   document.documentElement.style.setProperty('--accent', s.accent);
   document.documentElement.dataset.theme = s.theme;
   document.title = (p.name || 'CV') + ' – CV';
 
+  // Contact info chips stay attached to the Profile Hero card
   const chips = [];
   if (p.location) chips.push(`<span class="chip">📍 ${esc(p.location)}</span>`);
   if (p.email) chips.push(`<a class="chip" href="mailto:${esc(p.email)}">✉ ${esc(p.email)}</a>`);
   if (p.phone) chips.push(`<a class="chip" href="tel:${esc(p.phone)}">☎ ${esc(p.phone)}</a>`);
-  data.links.forEach(l => { const u = safeUrl(l.url); if (l.label) chips.push(u ? `<a class="chip" href="${esc(u)}" target="_blank" rel="noopener">${esc(l.label)} ↗</a>` : `<span class="chip">${esc(l.label)}</span>`); });
 
   const heroHtml = `<section class="hero" id="top">
     ${p.photo ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}">` : `<div class="avatar">👤</div>`}
     <div><h1>${esc(p.name)}</h1><div class="title">${esc(p.title)}</div><p>${esc(p.summary)}</p><div class="chips">${chips.join('')}</div></div></section>`;
 
   const cvEl = $('#cv');
-  const visible = s.order.filter(k => s.show[k]);
+  
+  // If attached to About, exclude 'links' from standalone rendering
+  let visible = s.order.filter(k => s.show[k]);
+  if (s.attachLinksToAbout) {
+    visible = visible.filter(k => k !== 'links');
+  }
 
   if (s.sidebarLayout === 'none') {
     cvEl.className = '';
@@ -110,7 +127,6 @@ function render() {
   } else {
     cvEl.className = `layout-2col sidebar-${s.sidebarLayout}`;
     
-    // Divide into sidebar vs main column
     const sideKeys = visible.filter(k => s.sidebarSections.includes(k));
     const mainKeys = visible.filter(k => !s.sidebarSections.includes(k));
 
@@ -125,11 +141,23 @@ function render() {
     cvEl.innerHTML = sideHtml + mainHtml;
   }
 
+  // Navbar navigation
   $('#nav').innerHTML = visible.map(k => `<a href="#${k}">${TITLES[k]}</a>`).join('');
 }
 
 function renderSection(k) {
-  if (k === 'about') return data.about ? `<p>${esc(data.about).replace(/\n/g, '<br>')}</p>` : '<p class="empty">Nothing here yet.</p>';
+  if (k === 'about') {
+    let out = data.about ? `<p>${esc(data.about).replace(/\n/g, '<br>')}</p>` : '<p class="empty">Nothing here yet.</p>';
+    if (data.settings.attachLinksToAbout && data.settings.show.links) {
+      out += renderLinksHtml();
+    }
+    return out;
+  }
+  
+  if (k === 'links') {
+    return renderLinksHtml();
+  }
+
   const list = data[k];
   if (!list.length) return '<p class="empty">Nothing here yet.</p>';
   const bullets = d => lines(d).length ? `<ul>${lines(d).map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
@@ -166,6 +194,7 @@ function buildEditor() {
   if (!s.order) s.order = [...DEFAULT_ORDER];
   if (!s.sidebarSections) s.sidebarSections = ['skills', 'languages'];
   if (!s.sidebarLayout) s.sidebarLayout = 'left';
+  if (s.attachLinksToAbout === undefined) s.attachLinksToAbout = false;
 
   let h = `<details open><summary>Profile</summary>
     <div class="photo-row"><img id="photoPrev" src="${esc(p.photo)}" alt="" ${p.photo ? '' : 'hidden'}>
@@ -174,10 +203,9 @@ function buildEditor() {
     <label>Short summary</label><input type="text" value="${esc(p.summary)}" data-p="summary">
     ${input('Email', p.email, 'data-p="email"')}${input('Phone', p.phone, 'data-p="phone"')}${input('Location', p.location, 'data-p="location"')}</details>`;
 
-  h += `<details><summary>Links (GitHub, LinkedIn…)</summary>${data.links.map((l, i) => `<div class="card">${input('Label', l.label, `data-l="${i}" data-f="label"`)}${input('URL', l.url, `data-l="${i}" data-f="url"`)}<div class="tools"><button data-act="del" data-list="links" data-i="${i}">Delete</button></div></div>`).join('')}<button data-act="add" data-list="links">+ Add link</button></details>`;
-
   h += `<details><summary>About</summary><label>About me</label><textarea data-about>${esc(data.about)}</textarea></details>`;
 
+  // Render all list-based sections
   for (const [k, def] of Object.entries(LISTS)) {
     h += `<details><summary>${def.title}</summary>` + data[k].map((item, i) => {
       let cardContent = def.fields.map(([f, label, type]) =>
@@ -218,23 +246,30 @@ function buildEditor() {
       <option value="none" ${s.sidebarLayout === 'none' ? 'selected' : ''}>Stacked (Single column)</option>
     </select>
 
+    <label style="margin-top:1rem; font-weight:600;">Links Section Options</label>
+    <label class="switch" style="font-size:0.85rem; margin-top:0.3rem;">
+      <input type="checkbox" id="chkAttachLinks" ${s.attachLinksToAbout ? 'checked' : ''}>
+      Attach links to About section (moves alongside About)
+    </label>
+
     <label style="margin-top:1rem; font-weight:600;">Sections Position & Order</label>
-    <p style="font-size:0.75rem; color:var(--muted); margin:0.2rem 0 0.5rem 0;">Toggle "Sidebar" to place any section on the side column.</p>
+    <p style="font-size:0.75rem; color:var(--muted); margin:0.2rem 0 0.5rem 0;">Check "Sidebar" to place any section on the side column.</p>
     <div style="display:flex; flex-direction:column; gap:0.4rem;">
       ${s.order.map((k, i) => {
         const inSide = s.sidebarSections.includes(k);
+        const isLinksDisabled = (k === 'links' && s.attachLinksToAbout);
         return `
-        <div style="display:flex; align-items:center; justify-content:space-between; padding:6px 8px; background:rgba(128,128,128,0.1); border-radius:6px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:6px 8px; background:rgba(128,128,128,0.1); border-radius:6px; ${isLinksDisabled ? 'opacity:0.5;' : ''}">
           <div style="display:flex; align-items:center; gap:8px;">
-            <label class="switch" style="margin:0;"><input type="checkbox" data-show="${k}" ${s.show[k] ? 'checked' : ''}> <strong>${TITLES[k]}</strong></label>
+            <label class="switch" style="margin:0;"><input type="checkbox" data-show="${k}" ${s.show[k] ? 'checked' : ''} ${isLinksDisabled ? 'disabled' : ''}> <strong>${TITLES[k]}</strong></label>
             <label class="switch" style="margin:0; font-size:0.75rem; color:var(--muted); cursor:pointer;">
-              <input type="checkbox" data-act="toggle-side" data-sec="${k}" ${inSide ? 'checked' : ''}>
+              <input type="checkbox" data-act="toggle-side" data-sec="${k}" ${inSide ? 'checked' : ''} ${isLinksDisabled ? 'disabled' : ''}>
               Sidebar
             </label>
           </div>
           <div style="display:flex; gap:4px;">
-            <button data-act="sec-up" data-i="${i}" ${i === 0 ? 'disabled' : ''} style="padding:2px 8px;">↑</button>
-            <button data-act="sec-down" data-i="${i}" ${i === s.order.length - 1 ? 'disabled' : ''} style="padding:2px 8px;">↓</button>
+            <button data-act="sec-up" data-i="${i}" ${i === 0 || isLinksDisabled ? 'disabled' : ''} style="padding:2px 8px;">↑</button>
+            <button data-act="sec-down" data-i="${i}" ${i === s.order.length - 1 || isLinksDisabled ? 'disabled' : ''} style="padding:2px 8px;">↓</button>
           </div>
         </div>
       `}).join('')}
@@ -264,12 +299,15 @@ function wireEditor() {
   body.addEventListener('input', e => {
     const t = e.target;
     if (t.dataset.p) data.profile[t.dataset.p] = t.value;
-    else if (t.dataset.l !== undefined) data.links[+t.dataset.l][t.dataset.f] = t.value;
     else if ('about' in t.dataset) data.about = t.value;
     else if (t.dataset.list) data[t.dataset.list][+t.dataset.i][t.dataset.f] = t.type === 'number' ? Number(t.value) : t.value;
     else if (t.id === 'accent') data.settings.accent = t.value;
     else if (t.id === 'theme') data.settings.theme = t.value;
     else if (t.id === 'sidebarLayout') data.settings.sidebarLayout = t.value;
+    else if (t.id === 'chkAttachLinks') {
+      data.settings.attachLinksToAbout = t.checked;
+      buildEditor();
+    }
     else if (t.dataset.show) data.settings.show[t.dataset.show] = t.checked;
     else return;
     save(); render();
