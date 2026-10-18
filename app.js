@@ -1,6 +1,6 @@
 /* ===== Dynamic CV =====
    Data priority: browser localStorage (your edits)  >  data.json (published)  >  DEFAULTS below. */
-const KEY = 'cv-data-v1';
+const KEY = 'cv-data-v2';
 
 const DEFAULT_ORDER = ['about', 'links', 'experience', 'education', 'skills', 'projects', 'certifications', 'languages'];
 
