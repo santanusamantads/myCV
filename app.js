@@ -1,6 +1,6 @@
 /* ===== Dynamic CV =====
    Data priority: browser localStorage (your edits)  >  data.json (published)  >  DEFAULTS below. */
-const KEY = 'cv-data-v3';
+const KEY = 'cv-data-v4';
 
 const DEFAULT_ORDER = ['about', 'links', 'experience', 'education', 'skills', 'projects', 'certifications', 'languages'];
 
@@ -47,6 +47,7 @@ const DEFAULTS = {
   customSections: [],
   settings: {
     accent: '#2563eb',
+    linkColor: '#38bdf8', // Independent color for clickable texts
     theme: 'dark',
     sidebarLayout: 'left',
     sidebarSections: ['skills', 'languages'],
@@ -72,13 +73,13 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 const safeUrl = u => /^(https?:|mailto:|tel:)/i.test(u || '') ? u : (u && /^[\w.-]+\.[a-z]{2,}/i.test(u) ? 'https://' + u : '');
 const lines = t => String(t || '').split('\n').map(s => s.trim()).filter(Boolean);
 
-/* Parse text with markdown links [label](url) without adding arrow symbols */
+/* Parse text with markdown links [label](url) using the dedicated clickable link color */
 function parseLinks(raw) {
   if (!raw) return '';
   const escaped = esc(raw);
   return escaped.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, label, url) => {
     const valid = safeUrl(url);
-    return valid ? `<a href="${esc(valid)}" target="_blank" rel="noopener" style="color:var(--accent); text-decoration:underline; font-weight:500;">${label}</a>` : label;
+    return valid ? `<a href="${esc(valid)}" target="_blank" rel="noopener" class="custom-link">${label}</a>` : label;
   });
 }
 
@@ -142,8 +143,10 @@ function render() {
   if (!s.sidebarSections) s.sidebarSections = ['skills', 'languages'];
   if (!s.sidebarLayout) s.sidebarLayout = 'left';
   if (!s.linksPlacement) s.linksPlacement = 'standalone';
+  if (!s.linkColor) s.linkColor = s.accent || '#38bdf8';
 
   document.documentElement.style.setProperty('--accent', s.accent);
+  document.documentElement.style.setProperty('--link-color', s.linkColor);
   document.documentElement.dataset.theme = s.theme;
   document.title = (p.name || 'CV') + ' – CV';
 
@@ -255,7 +258,7 @@ function renderSection(k) {
       const u = safeUrl(i.link);
       return `<div class="item">
         <div class="row">
-          <h3>${u ? `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(i.name)} ↗</a>` : parseLinks(i.name)}</h3>
+          <h3>${u ? `<a href="${esc(u)}" target="_blank" rel="noopener" class="custom-link">${esc(i.name)} ↗</a>` : parseLinks(i.name)}</h3>
         </div>
         <div>${parseLinks(i.description)}</div>
         <div class="tags">${String(i.tech || '').split(',').map(t => t.trim()).filter(Boolean).map(t => `<span>${esc(t)}</span>`).join('')}</div>
@@ -271,6 +274,7 @@ const input = (label, val, attrs = '') => `<label>${label}</label><input type="t
 function buildEditor() {
   syncOrderAndShow();
   const p = data.profile, s = data.settings;
+  if (!s.linkColor) s.linkColor = s.accent || '#38bdf8';
 
   let h = `<details open><summary>Profile</summary>
     <div class="photo-row"><img id="photoPrev" src="${esc(p.photo)}" alt="" ${p.photo ? '' : 'hidden'}>
@@ -380,9 +384,21 @@ function buildEditor() {
     <button data-act="add-new-section" style="width:100%; padding:0.6rem; font-weight:600; border-style:dashed;">+ Add Custom Section</button>
   </div>`;
 
+  // Appearance & Layout with side-by-side Accent & Clickable text color pickers
   h += `<details><summary>Appearance & layout</summary>
-    <label>Accent colour</label><input type="color" id="accent" value="${esc(s.accent)}">
-    <label>Theme</label><select id="theme"><option value="light">Light</option><option value="dark">Dark</option></select>
+    <div style="display:flex; gap:1rem; align-items:center;">
+      <div style="flex:1;">
+        <label>Accent colour</label>
+        <input type="color" id="accent" value="${esc(s.accent)}" style="height:38px; padding:2px;">
+      </div>
+      <div style="flex:1;">
+        <label>Clickable text colour</label>
+        <input type="color" id="linkColor" value="${esc(s.linkColor)}" style="height:38px; padding:2px;">
+      </div>
+    </div>
+
+    <label style="margin-top:0.8rem;">Theme</label>
+    <select id="theme"><option value="light">Light</option><option value="dark">Dark</option></select>
 
     <label style="margin-top:1rem; font-weight:600;">Overall Layout</label>
     <label style="font-size:0.75rem; color:var(--muted);">Sidebar placement</label>
@@ -457,6 +473,7 @@ function wireEditor() {
       data.customSections[+t.dataset.customTitle].title = t.value;
     }
     else if (t.id === 'accent') data.settings.accent = t.value;
+    else if (t.id === 'linkColor') data.settings.linkColor = t.value;
     else if (t.id === 'theme') data.settings.theme = t.value;
     else if (t.id === 'sidebarLayout') data.settings.sidebarLayout = t.value;
     else if (t.id === 'linksPlacement') {
