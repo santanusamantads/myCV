@@ -41,18 +41,19 @@ const DEFAULTS = {
     { name: 'Bengali', showLevel: false, level: 95 },
     { name: 'Hindi', showLevel: false, level: 85 }
   ],
+  customSections: [], // Array of { id, title, type: 'cards'|'tags', items: [...] }
   settings: {
     accent: '#2563eb',
     theme: 'dark',
-    sidebarLayout: 'left', // 'none' (stacked), 'left' (GitHub style), or 'right'
-    sidebarSections: ['skills', 'languages'], // Sections placed in the sidebar column
-    linksPlacement: 'standalone', // 'standalone', 'profile', or 'about'
+    sidebarLayout: 'left',
+    sidebarSections: ['skills', 'languages'],
+    linksPlacement: 'standalone',
     order: [...DEFAULT_ORDER],
     show: { about: true, links: true, experience: false, education: true, skills: true, projects: true, certifications: false, languages: true }
   }
 };
 
-/* Section definitions: drives both rendering and the editor form */
+/* Base section definitions */
 const LISTS = {
   links:          { title: 'Links & Profiles', fields: [['label','Label'],['url','URL (https://…)']] },
   experience:     { title: 'Experience',     fields: [['role','Role'],['company','Company'],['period','Period'],['details','Details (one bullet per line)','area']] },
@@ -62,7 +63,6 @@ const LISTS = {
   certifications: { title: 'Certifications', fields: [['name','Name'],['issuer','Issuer'],['year','Year']] },
   languages:      { title: 'Languages',      fields: [['name','Language']] }
 };
-const TITLES = { about: 'About', ...Object.fromEntries(Object.entries(LISTS).map(([k, v]) => [k, v.title])) };
 
 let data = structuredClone(DEFAULTS);
 const $ = s => document.querySelector(s);
@@ -80,7 +80,30 @@ const merge = (base, over) => {
 };
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { alert('Could not save (storage full?). Use a smaller photo or download data.json.'); } };
 
-/* Helper to generate links chip tags */
+function getSectionTitle(k) {
+  if (k === 'about') return 'About';
+  if (LISTS[k]) return LISTS[k].title;
+  const custom = (data.customSections || []).find(c => c.id === k);
+  return custom ? custom.title : k;
+}
+
+function syncOrderAndShow() {
+  if (!data.customSections) data.customSections = [];
+  if (!data.settings.order) data.settings.order = [...DEFAULT_ORDER];
+  if (!data.settings.show) data.settings.show = {};
+
+  data.customSections.forEach(c => {
+    if (!data.settings.order.includes(c.id)) {
+      data.settings.order.push(c.id);
+    }
+    if (data.settings.show[c.id] === undefined) {
+      data.settings.show[c.id] = true;
+    }
+  });
+
+  data.settings.order = data.settings.order.filter(k => DEFAULT_ORDER.includes(k) || data.customSections.some(c => c.id === k));
+}
+
 function getLinksChips() {
   if (!data.links || !data.links.length) return '';
   return data.links.map(l => {
@@ -91,8 +114,8 @@ function getLinksChips() {
 
 /* ---------- Render CV ---------- */
 function render() {
+  syncOrderAndShow();
   const p = data.profile, s = data.settings;
-  if (!s.order) s.order = [...DEFAULT_ORDER];
   if (!s.sidebarSections) s.sidebarSections = ['skills', 'languages'];
   if (!s.sidebarLayout) s.sidebarLayout = 'left';
   if (!s.linksPlacement) s.linksPlacement = 'standalone';
@@ -101,13 +124,11 @@ function render() {
   document.documentElement.dataset.theme = s.theme;
   document.title = (p.name || 'CV') + ' – CV';
 
-  // Contact info chips
   const chips = [];
   if (p.location) chips.push(`<span class="chip">📍 ${esc(p.location)}</span>`);
   if (p.email) chips.push(`<a class="chip" href="mailto:${esc(p.email)}">✉ ${esc(p.email)}</a>`);
   if (p.phone) chips.push(`<a class="chip" href="tel:${esc(p.phone)}">☎ ${esc(p.phone)}</a>`);
 
-  // If attached to Profile, append links directly inside the profile hero card
   if (s.linksPlacement === 'profile' && s.show.links) {
     data.links.forEach(l => {
       const u = safeUrl(l.url);
@@ -120,8 +141,6 @@ function render() {
     <div><h1>${esc(p.name)}</h1><div class="title">${esc(p.title)}</div><p>${esc(p.summary)}</p><div class="chips">${chips.join('')}</div></div></section>`;
 
   const cvEl = $('#cv');
-  
-  // If attached to Profile or About, exclude standalone links section from rendering
   let visible = s.order.filter(k => s.show[k]);
   if (s.linksPlacement !== 'standalone') {
     visible = visible.filter(k => k !== 'links');
@@ -130,27 +149,25 @@ function render() {
   if (s.sidebarLayout === 'none') {
     cvEl.className = '';
     let html = heroHtml;
-    for (const k of visible) html += `<section id="${k}"><h2>${TITLES[k]}</h2>${renderSection(k)}</section>`;
+    for (const k of visible) html += `<section id="${k}"><h2>${esc(getSectionTitle(k))}</h2>${renderSection(k)}</section>`;
     cvEl.innerHTML = html;
   } else {
     cvEl.className = `layout-2col sidebar-${s.sidebarLayout}`;
-    
     const sideKeys = visible.filter(k => s.sidebarSections.includes(k));
     const mainKeys = visible.filter(k => !s.sidebarSections.includes(k));
 
     let sideHtml = `<div class="cv-sidebar">${heroHtml}`;
-    for (const k of sideKeys) sideHtml += `<section id="${k}"><h2>${TITLES[k]}</h2>${renderSection(k)}</section>`;
+    for (const k of sideKeys) sideHtml += `<section id="${k}"><h2>${esc(getSectionTitle(k))}</h2>${renderSection(k)}</section>`;
     sideHtml += `</div>`;
 
     let mainHtml = `<div class="cv-main">`;
-    for (const k of mainKeys) mainHtml += `<section id="${k}"><h2>${TITLES[k]}</h2>${renderSection(k)}</section>`;
+    for (const k of mainKeys) mainHtml += `<section id="${k}"><h2>${esc(getSectionTitle(k))}</h2>${renderSection(k)}</section>`;
     mainHtml += `</div>`;
 
     cvEl.innerHTML = sideHtml + mainHtml;
   }
 
-  // Navbar navigation
-  $('#nav').innerHTML = visible.map(k => `<a href="#${k}">${TITLES[k]}</a>`).join('');
+  $('#nav').innerHTML = visible.map(k => `<a href="#${k}">${esc(getSectionTitle(k))}</a>`).join('');
 }
 
 function renderSection(k) {
@@ -167,13 +184,41 @@ function renderSection(k) {
     return content ? `<div class="chips" style="display:flex; flex-wrap:wrap; gap:0.5rem;">${content}</div>` : '<p class="empty">Nothing here yet.</p>';
   }
 
+  // Handle Custom Sections
+  const custom = (data.customSections || []).find(c => c.id === k);
+  if (custom) {
+    if (!custom.items || !custom.items.length) return '<p class="empty">Nothing here yet.</p>';
+    if (custom.type === 'tags') {
+      const hasBar = custom.items.some(i => i.showLevel);
+      if (hasBar) {
+        return `<div class="grid">${custom.items.map(i => {
+          if (!i.showLevel) {
+            return `<div style="display:flex; align-items:center;"><span class="chip" style="font-size:0.95rem; padding:0.35rem 0.8rem;">${esc(i.name)}</span></div>`;
+          }
+          const lvl = Math.min(100, Math.max(0, +i.level || 0));
+          return `<div><div class="row" style="display:flex;justify-content:space-between"><span>${esc(i.name)}</span><span class="when">${lvl}%</span></div><div class="bar"><i style="width:${lvl}%"></i></div></div>`;
+        }).join('')}</div>`;
+      }
+      return `<div class="chips" style="display:flex; flex-wrap:wrap; gap:0.5rem;">${custom.items.map(i => `<span class="chip" style="font-size:0.95rem; padding:0.4rem 0.8rem;">${esc(i.name)}</span>`).join('')}</div>`;
+    } else {
+      const bullets = d => lines(d).length ? `<ul>${lines(d).map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
+      return custom.items.map(i => `
+        <div class="item">
+          <div class="row"><h3>${esc(i.title)}</h3>${i.period ? `<span class="when">${esc(i.period)}</span>` : ''}</div>
+          ${i.subtitle ? `<div class="sub">${esc(i.subtitle)}</div>` : ''}
+          ${bullets(i.details)}
+        </div>
+      `).join('');
+    }
+  }
+
+  // Default Standard Sections
   const list = data[k];
-  if (!list.length) return '<p class="empty">Nothing here yet.</p>';
+  if (!list || !list.length) return '<p class="empty">Nothing here yet.</p>';
   const bullets = d => lines(d).length ? `<ul>${lines(d).map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
 
   if (k === 'skills' || k === 'languages') {
     const hasAnyBar = list.some(i => i.showLevel);
-
     if (hasAnyBar) {
       return `<div class="grid">${list.map(i => {
         if (!i.showLevel) {
@@ -183,7 +228,6 @@ function renderSection(k) {
         return `<div><div class="row" style="display:flex;justify-content:space-between"><span>${esc(i.name)}</span><span class="when">${lvl}%</span></div><div class="bar"><i style="width:${lvl}%"></i></div></div>`;
       }).join('')}</div>`;
     }
-
     return `<div class="chips" style="display:flex; flex-wrap:wrap; gap:0.5rem;">${list.map(i => `<span class="chip" style="font-size:0.95rem; padding:0.4rem 0.8rem;">${esc(i.name)}</span>`).join('')}</div>`;
   }
 
@@ -199,11 +243,8 @@ function renderSection(k) {
 const input = (label, val, attrs = '') => `<label>${label}</label><input type="text" value="${esc(val)}" ${attrs}>`;
 
 function buildEditor() {
+  syncOrderAndShow();
   const p = data.profile, s = data.settings;
-  if (!s.order) s.order = [...DEFAULT_ORDER];
-  if (!s.sidebarSections) s.sidebarSections = ['skills', 'languages'];
-  if (!s.sidebarLayout) s.sidebarLayout = 'left';
-  if (!s.linksPlacement) s.linksPlacement = 'standalone';
 
   let h = `<details open><summary>Profile</summary>
     <div class="photo-row"><img id="photoPrev" src="${esc(p.photo)}" alt="" ${p.photo ? '' : 'hidden'}>
@@ -214,14 +255,13 @@ function buildEditor() {
 
   h += `<details><summary>About</summary><label>About me</label><textarea data-about>${esc(data.about)}</textarea></details>`;
 
-  // List sections (Links, Experience, Education, Skills, Projects, etc.)
+  // Default lists
   for (const [k, def] of Object.entries(LISTS)) {
     h += `<details><summary>${def.title}</summary>` + data[k].map((item, i) => {
       let cardContent = def.fields.map(([f, label, type]) =>
         type === 'area' ? `<label>${label}</label><textarea data-list="${k}" data-i="${i}" data-f="${f}">${esc(item[f])}</textarea>`
         : `<label>${label}</label><input type="text" value="${esc(item[f])}" data-list="${k}" data-i="${i}" data-f="${f}">`).join('');
 
-      // Custom per-item checkbox for Skills and Languages
       if (k === 'skills' || k === 'languages') {
         const isChecked = !!item.showLevel;
         cardContent += `
@@ -243,6 +283,67 @@ function buildEditor() {
     + `<button data-act="add" data-list="${k}">+ Add ${def.title.toLowerCase()} entry</button></details>`;
   }
 
+  // Custom Sections Accordions
+  (data.customSections || []).forEach((c, cIdx) => {
+    h += `<details><summary>✦ ${esc(c.title)} (Custom)</summary>
+      <div style="padding:0.4rem 0; border-bottom:1px solid var(--line); margin-bottom:0.6rem;">
+        <label>Section Title</label>
+        <input type="text" value="${esc(c.title)}" data-custom-title="${cIdx}">
+        <label style="margin-top:0.4rem;">Format / Style</label>
+        <select data-custom-type="${cIdx}" style="width:100%; padding:.4rem; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--text);">
+          <option value="cards" ${c.type === 'cards' ? 'selected' : ''}>Timeline Cards (Like Experience/Education)</option>
+          <option value="tags" ${c.type === 'tags' ? 'selected' : ''}>Chips / Tags (Like Skills)</option>
+        </select>
+        <button data-act="del-custom-sec" data-cidx="${cIdx}" class="danger" style="margin-top:0.6rem; padding:0.2rem 0.6rem; font-size:0.8rem;">Delete this whole section</button>
+      </div>`;
+
+    if (c.type === 'tags') {
+      h += (c.items || []).map((item, i) => `
+        <div class="card">
+          <label>Item Name</label>
+          <input type="text" value="${esc(item.name)}" data-cust-list="${cIdx}" data-i="${i}" data-f="name">
+          <div style="margin-top:0.6rem; padding:0.4rem 0.6rem; background:rgba(128,128,128,0.08); border-radius:6px;">
+            <label class="switch" style="margin:0; font-size:0.85rem; cursor:pointer;">
+              <input type="checkbox" data-act="toggle-custom-level" data-cidx="${cIdx}" data-i="${i}" ${item.showLevel ? 'checked' : ''}>
+              Show level (%) on CV
+            </label>
+            <div id="cust-lvl-box-${cIdx}-${i}" style="margin-top:0.4rem; ${item.showLevel ? '' : 'display:none;'}">
+              <label style="font-size:0.75rem; color:var(--muted);">Level (0-100)</label>
+              <input type="number" min="0" max="100" value="${item.level !== undefined ? item.level : 75}" data-cust-list="${cIdx}" data-i="${i}" data-f="level">
+            </div>
+          </div>
+          <div class="tools">
+            <button data-act="cust-item-up" data-cidx="${cIdx}" data-i="${i}">↑</button>
+            <button data-act="cust-item-down" data-cidx="${cIdx}" data-i="${i}">↓</button>
+            <button data-act="cust-item-del" data-cidx="${cIdx}" data-i="${i}">Delete</button>
+          </div>
+        </div>
+      `).join('');
+    } else {
+      h += (c.items || []).map((item, i) => `
+        <div class="card">
+          <label>Title</label><input type="text" value="${esc(item.title)}" data-cust-list="${cIdx}" data-i="${i}" data-f="title">
+          <label>Subtitle / Issuer / Org</label><input type="text" value="${esc(item.subtitle)}" data-cust-list="${cIdx}" data-i="${i}" data-f="subtitle">
+          <label>Period / Year</label><input type="text" value="${esc(item.period)}" data-cust-list="${cIdx}" data-i="${i}" data-f="period">
+          <label>Details (one bullet per line)</label><textarea data-cust-list="${cIdx}" data-i="${i}" data-f="details">${esc(item.details)}</textarea>
+          <div class="tools">
+            <button data-act="cust-item-up" data-cidx="${cIdx}" data-i="${i}">↑</button>
+            <button data-act="cust-item-down" data-cidx="${cIdx}" data-i="${i}">↓</button>
+            <button data-act="cust-item-del" data-cidx="${cIdx}" data-i="${i}">Delete</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    h += `<button data-act="add-custom-item" data-cidx="${cIdx}">+ Add entry to ${esc(c.title)}</button></details>`;
+  });
+
+  // New Custom Section Creator Button
+  h += `<div style="margin: 1rem 0;">
+    <button data-act="add-new-section" style="width:100%; padding:0.6rem; font-weight:600; border-style:dashed;">+ Add Custom Section</button>
+  </div>`;
+
+  // Appearance & Layout
   h += `<details><summary>Appearance & layout</summary>
     <label>Accent colour</label><input type="color" id="accent" value="${esc(s.accent)}">
     <label>Theme</label><select id="theme"><option value="light">Light</option><option value="dark">Dark</option></select>
@@ -272,7 +373,7 @@ function buildEditor() {
         return `
         <div style="display:flex; align-items:center; justify-content:space-between; padding:6px 8px; background:rgba(128,128,128,0.1); border-radius:6px; ${isLinksAttached ? 'opacity:0.5;' : ''}">
           <div style="display:flex; align-items:center; gap:8px;">
-            <label class="switch" style="margin:0;"><input type="checkbox" data-show="${k}" ${s.show[k] ? 'checked' : ''} ${isLinksAttached ? 'disabled' : ''}> <strong>${TITLES[k]}</strong></label>
+            <label class="switch" style="margin:0;"><input type="checkbox" data-show="${k}" ${s.show[k] ? 'checked' : ''} ${isLinksAttached ? 'disabled' : ''}> <strong>${esc(getSectionTitle(k))}</strong></label>
             <label class="switch" style="margin:0; font-size:0.75rem; color:var(--muted); cursor:pointer;">
               <input type="checkbox" data-act="toggle-side" data-sec="${k}" ${inSide ? 'checked' : ''} ${isLinksAttached ? 'disabled' : ''}>
               Sidebar
@@ -291,7 +392,6 @@ function buildEditor() {
   $('#theme').value = s.theme;
 }
 
-/* Resize photo -> small JPEG data URL so data.json stays light */
 function resizeImage(file, max = 480) {
   return new Promise((res, rej) => {
     const img = new Image(), url = URL.createObjectURL(file);
@@ -307,11 +407,19 @@ function resizeImage(file, max = 480) {
 
 function wireEditor() {
   const body = $('#edBody');
+  
   body.addEventListener('input', e => {
     const t = e.target;
     if (t.dataset.p) data.profile[t.dataset.p] = t.value;
     else if ('about' in t.dataset) data.about = t.value;
     else if (t.dataset.list) data[t.dataset.list][+t.dataset.i][t.dataset.f] = t.type === 'number' ? Number(t.value) : t.value;
+    else if (t.dataset.custList) {
+      const cIdx = +t.dataset.custList, itemIdx = +t.dataset.i, f = t.dataset.f;
+      data.customSections[cIdx].items[itemIdx][f] = t.type === 'number' ? Number(t.value) : t.value;
+    }
+    else if ('customTitle' in t.dataset) {
+      data.customSections[+t.dataset.customTitle].title = t.value;
+    }
     else if (t.id === 'accent') data.settings.accent = t.value;
     else if (t.id === 'theme') data.settings.theme = t.value;
     else if (t.id === 'sidebarLayout') data.settings.sidebarLayout = t.value;
@@ -323,6 +431,7 @@ function wireEditor() {
     else return;
     save(); render();
   });
+
   body.addEventListener('change', async e => {
     const t = e.target;
     if (t.dataset.act === 'toggle-level') {
@@ -331,6 +440,17 @@ function wireEditor() {
       const box = document.getElementById(`lvl-box-${k}-${i}`);
       if (box) box.style.display = t.checked ? 'block' : 'none';
       save(); render();
+    } else if (t.dataset.act === 'toggle-custom-level') {
+      const cIdx = +t.dataset.cidx, i = +t.dataset.i;
+      data.customSections[cIdx].items[i].showLevel = t.checked;
+      const box = document.getElementById(`cust-lvl-box-${cIdx}-${i}`);
+      if (box) box.style.display = t.checked ? 'block' : 'none';
+      save(); render();
+    } else if ('customType' in t.dataset) {
+      const cIdx = +t.dataset.customType;
+      data.customSections[cIdx].type = t.value;
+      data.customSections[cIdx].items = []; // reset items when format toggles
+      save(); render(); buildEditor();
     } else if (t.dataset.act === 'toggle-side') {
       const sec = t.dataset.sec;
       if (t.checked && !data.settings.sidebarSections.includes(sec)) {
@@ -340,10 +460,11 @@ function wireEditor() {
       }
       save(); render();
     } else if (t.id === 'photoFile' && t.files[0]) {
-      try { data.profile.photo = await resizeImage(t.files[0]); save(); render(); buildEditor(); keepOpen(); }
+      try { data.profile.photo = await resizeImage(t.files[0]); save(); render(); buildEditor(); }
       catch { alert('Could not read that image.'); }
     }
   });
+
   body.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.id === 'photoClear') { data.profile.photo = ''; }
@@ -351,6 +472,46 @@ function wireEditor() {
       const i = +b.dataset.i, ord = data.settings.order;
       if (b.dataset.act === 'sec-up' && i > 0) [ord[i - 1], ord[i]] = [ord[i], ord[i - 1]];
       if (b.dataset.act === 'sec-down' && i < ord.length - 1) [ord[i + 1], ord[i]] = [ord[i], ord[i + 1]];
+    }
+    else if (b.dataset.act === 'add-new-section') {
+      const newSec = {
+        id: `custom_${Date.now()}`,
+        title: 'New Section',
+        type: 'cards',
+        items: []
+      };
+      if (!data.customSections) data.customSections = [];
+      data.customSections.push(newSec);
+      syncOrderAndShow();
+    }
+    else if (b.dataset.act === 'del-custom-sec') {
+      const cIdx = +b.dataset.cidx;
+      const secId = data.customSections[cIdx].id;
+      data.customSections.splice(cIdx, 1);
+      data.settings.order = data.settings.order.filter(x => x !== secId);
+      delete data.settings.show[secId];
+      data.settings.sidebarSections = data.settings.sidebarSections.filter(x => x !== secId);
+    }
+    else if (b.dataset.act === 'add-custom-item') {
+      const cIdx = +b.dataset.cidx;
+      const sec = data.customSections[cIdx];
+      if (sec.type === 'tags') {
+        sec.items.push({ name: '', showLevel: false, level: 75 });
+      } else {
+        sec.items.push({ title: '', subtitle: '', period: '', details: '' });
+      }
+    }
+    else if (b.dataset.act === 'cust-item-del') {
+      const cIdx = +b.dataset.cidx, i = +b.dataset.i;
+      data.customSections[cIdx].items.splice(i, 1);
+    }
+    else if (b.dataset.act === 'cust-item-up') {
+      const cIdx = +b.dataset.cidx, i = +b.dataset.i, arr = data.customSections[cIdx].items;
+      if (i > 0) [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]];
+    }
+    else if (b.dataset.act === 'cust-item-down') {
+      const cIdx = +b.dataset.cidx, i = +b.dataset.i, arr = data.customSections[cIdx].items;
+      if (i < arr.length - 1) [arr[i + 1], arr[i]] = [arr[i], arr[i + 1]];
     }
     else if (b.dataset.act) {
       const k = b.dataset.list, i = +b.dataset.i, arr = data[k];
@@ -363,12 +524,12 @@ function wireEditor() {
       if (b.dataset.act === 'up' && i > 0) [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]];
       if (b.dataset.act === 'down' && i < arr.length - 1) [arr[i + 1], arr[i]] = [arr[i], arr[i + 1]];
     } else return;
+
     save(); render();
     const open = [...body.querySelectorAll('details')].map(d => d.open);
     buildEditor(); body.querySelectorAll('details').forEach((d, n) => d.open = open[n]);
   });
 }
-const keepOpen = () => { const d = $('#edBody details'); if (d) d.open = true; };
 
 /* ---------- Boot ---------- */
 async function load() {
