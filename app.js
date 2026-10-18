@@ -19,7 +19,7 @@ const DEFAULTS = {
     { label: 'LinkedIn', url: 'https://linkedin.com/in/santanusamantads' },
     { label: 'Kaggle', url: 'https://kaggle.com/shyamsantanu01122004' }
   ],
-  about: 'I am a first-semester M.Sc. Data Science and Artificial Intelligence student at Ramakrishna Mission Vivekananda Educational and Research Institute (RKMVERI), with a strong foundational background in Physics from RKMVCC Rahara. My academic interests center around statistical inference, mathematical optimization, linear algebra, and data structures & algorithms. I actively focus on building machine learning algorithms from scratch—including KNN and multi-class Logistic Regression with gradient descent optimization—and applying regularized predictive modeling (LASSO) to complex datasets.',
+  about: 'I am a first-semester M.Sc. Data Science and Artificial Intelligence student at Ramakrishna Mission Vivekananda Educational and Research Institute (RKMVERI), with a foundational background in Physics from RKMVCC Rahara. My academic interests center around statistical inference, mathematical optimization, linear algebra, and data structures & algorithms. I actively focus on building machine learning algorithms from scratch—including KNN and multi-class Logistic Regression with gradient descent optimization—and applying regularized predictive modeling (LASSO) to complex datasets.',
   experience: [],
   education: [
     { degree: 'M.Sc. in Data Science and Artificial Intelligence', school: 'Ramakrishna Mission Vivekananda Educational and Research Institute (RKMVERI)', period: '2026 – 2028', details: 'Focus on Machine Learning, Statistical Inference, and AI' },
@@ -41,7 +41,7 @@ const DEFAULTS = {
     { name: 'Bengali', showLevel: false, level: 95 },
     { name: 'Hindi', showLevel: false, level: 85 }
   ],
-  customSections: [], // Array of { id, title, type: 'cards'|'tags', items: [...] }
+  customSections: [],
   settings: {
     accent: '#2563eb',
     theme: 'dark',
@@ -53,7 +53,6 @@ const DEFAULTS = {
   }
 };
 
-/* Base section definitions */
 const LISTS = {
   links:          { title: 'Links & Profiles', fields: [['label','Label'],['url','URL (https://…)']] },
   experience:     { title: 'Experience',     fields: [['role','Role'],['company','Company'],['period','Period'],['details','Details (one bullet per line)','area']] },
@@ -69,6 +68,17 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const safeUrl = u => /^(https?:|mailto:|tel:)/i.test(u || '') ? u : (u && /^[\w.-]+\.[a-z]{2,}/i.test(u) ? 'https://' + u : '');
 const lines = t => String(t || '').split('\n').map(s => s.trim()).filter(Boolean);
+
+/* Parse text with markdown links [label](url) */
+function parseLinks(raw) {
+  if (!raw) return '';
+  const escaped = esc(raw);
+  return escaped.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, label, url) => {
+    const valid = safeUrl(url);
+    return valid ? `<a href="${esc(valid)}" target="_blank" rel="noopener" style="color:var(--accent); text-decoration:underline;">${label} ↗</a>` : label;
+  });
+}
+
 const merge = (base, over) => {
   const out = structuredClone(base);
   for (const k in over || {}) {
@@ -93,12 +103,8 @@ function syncOrderAndShow() {
   if (!data.settings.show) data.settings.show = {};
 
   data.customSections.forEach(c => {
-    if (!data.settings.order.includes(c.id)) {
-      data.settings.order.push(c.id);
-    }
-    if (data.settings.show[c.id] === undefined) {
-      data.settings.show[c.id] = true;
-    }
+    if (!data.settings.order.includes(c.id)) data.settings.order.push(c.id);
+    if (data.settings.show[c.id] === undefined) data.settings.show[c.id] = true;
   });
 
   data.settings.order = data.settings.order.filter(k => DEFAULT_ORDER.includes(k) || data.customSections.some(c => c.id === k));
@@ -110,6 +116,20 @@ function getLinksChips() {
     const u = safeUrl(l.url);
     return l.label ? (u ? `<a class="chip" href="${esc(u)}" target="_blank" rel="noopener">${esc(l.label)} ↗</a>` : `<span class="chip">${esc(l.label)}</span>`) : '';
   }).join('');
+}
+
+/* Helper to render the Phrase to Link Box in the editor */
+function linkHelperHtml(targetId) {
+  return `
+    <div class="link-helper-box">
+      <div style="font-weight:600; font-size:0.75rem; color:var(--muted);">🔗 Make text into a link</div>
+      <label>Portion of text (Label)</label>
+      <input type="text" id="lh-label-${targetId}" placeholder="e.g. RKMVERI">
+      <label>URL (Link)</label>
+      <input type="text" id="lh-url-${targetId}" placeholder="https://...">
+      <button type="button" data-act="apply-link" data-target="${targetId}">Insert Link</button>
+    </div>
+  `;
 }
 
 /* ---------- Render CV ---------- */
@@ -161,7 +181,7 @@ function render() {
     sideHtml += `</div>`;
 
     let mainHtml = `<div class="cv-main">`;
-    for (const k of mainKeys) mainHtml += `<section id="${k}"><h2>${esc(getSectionTitle(k))}</h2>${renderSection(k)}</section>`;
+    for (const k of mainKeys) mainHtml += `<section id="${k}"><h2>${esc(getSectionTitle(k))}</h2>${renderSection(k)}</h2>${renderSection(k)}</section>`;
     mainHtml += `</div>`;
 
     cvEl.innerHTML = sideHtml + mainHtml;
@@ -172,7 +192,7 @@ function render() {
 
 function renderSection(k) {
   if (k === 'about') {
-    let out = data.about ? `<p>${esc(data.about).replace(/\n/g, '<br>')}</p>` : '<p class="empty">Nothing here yet.</p>';
+    let out = data.about ? `<p>${parseLinks(data.about).replace(/\n/g, '<br>')}</p>` : '<p class="empty">Nothing here yet.</p>';
     if (data.settings.linksPlacement === 'about' && data.settings.show.links) {
       out += `<div class="chips" style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.8rem;">${getLinksChips()}</div>`;
     }
@@ -184,7 +204,6 @@ function renderSection(k) {
     return content ? `<div class="chips" style="display:flex; flex-wrap:wrap; gap:0.5rem;">${content}</div>` : '<p class="empty">Nothing here yet.</p>';
   }
 
-  // Handle Custom Sections
   const custom = (data.customSections || []).find(c => c.id === k);
   if (custom) {
     if (!custom.items || !custom.items.length) return '<p class="empty">Nothing here yet.</p>';
@@ -192,38 +211,33 @@ function renderSection(k) {
       const hasBar = custom.items.some(i => i.showLevel);
       if (hasBar) {
         return `<div class="grid">${custom.items.map(i => {
-          if (!i.showLevel) {
-            return `<div style="display:flex; align-items:center;"><span class="chip" style="font-size:0.95rem; padding:0.35rem 0.8rem;">${esc(i.name)}</span></div>`;
-          }
+          if (!i.showLevel) return `<div style="display:flex; align-items:center;"><span class="chip" style="font-size:0.95rem; padding:0.35rem 0.8rem;">${esc(i.name)}</span></div>`;
           const lvl = Math.min(100, Math.max(0, +i.level || 0));
           return `<div><div class="row" style="display:flex;justify-content:space-between"><span>${esc(i.name)}</span><span class="when">${lvl}%</span></div><div class="bar"><i style="width:${lvl}%"></i></div></div>`;
         }).join('')}</div>`;
       }
       return `<div class="chips" style="display:flex; flex-wrap:wrap; gap:0.5rem;">${custom.items.map(i => `<span class="chip" style="font-size:0.95rem; padding:0.4rem 0.8rem;">${esc(i.name)}</span>`).join('')}</div>`;
     } else {
-      const bullets = d => lines(d).length ? `<ul>${lines(d).map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
+      const bullets = d => lines(d).length ? `<ul>${lines(d).map(x => `<li>${parseLinks(x)}</li>`).join('')}</ul>` : '';
       return custom.items.map(i => `
         <div class="item">
-          <div class="row"><h3>${esc(i.title)}</h3>${i.period ? `<span class="when">${esc(i.period)}</span>` : ''}</div>
-          ${i.subtitle ? `<div class="sub">${esc(i.subtitle)}</div>` : ''}
+          <div class="row"><h3>${parseLinks(i.title)}</h3>${i.period ? `<span class="when">${esc(i.period)}</span>` : ''}</div>
+          ${i.subtitle ? `<div class="sub">${parseLinks(i.subtitle)}</div>` : ''}
           ${bullets(i.details)}
         </div>
       `).join('');
     }
   }
 
-  // Default Standard Sections
   const list = data[k];
   if (!list || !list.length) return '<p class="empty">Nothing here yet.</p>';
-  const bullets = d => lines(d).length ? `<ul>${lines(d).map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
+  const bullets = d => lines(d).length ? `<ul>${lines(d).map(x => `<li>${parseLinks(x)}</li>`).join('')}</ul>` : '';
 
   if (k === 'skills' || k === 'languages') {
     const hasAnyBar = list.some(i => i.showLevel);
     if (hasAnyBar) {
       return `<div class="grid">${list.map(i => {
-        if (!i.showLevel) {
-          return `<div style="display:flex; align-items:center;"><span class="chip" style="font-size:0.95rem; padding:0.35rem 0.8rem;">${esc(i.name)}</span></div>`;
-        }
+        if (!i.showLevel) return `<div style="display:flex; align-items:center;"><span class="chip" style="font-size:0.95rem; padding:0.35rem 0.8rem;">${esc(i.name)}</span></div>`;
         const lvl = Math.min(100, Math.max(0, +i.level || 0));
         return `<div><div class="row" style="display:flex;justify-content:space-between"><span>${esc(i.name)}</span><span class="when">${lvl}%</span></div><div class="bar"><i style="width:${lvl}%"></i></div></div>`;
       }).join('')}</div>`;
@@ -232,10 +246,19 @@ function renderSection(k) {
   }
 
   return list.map(i => {
-    if (k === 'experience') return `<div class="item"><div class="row"><h3>${esc(i.role)}</h3><span class="when">${esc(i.period)}</span></div><div class="sub">${esc(i.company)}</div>${bullets(i.details)}</div>`;
-    if (k === 'education') return `<div class="item"><div class="row"><h3>${esc(i.degree)}</h3><span class="when">${esc(i.period)}</span></div><div class="sub">${esc(i.school)}</div>${bullets(i.details)}</div>`;
-    if (k === 'projects') { const u = safeUrl(i.link); return `<div class="item"><div class="row"><h3>${u ? `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(i.name)} ↗</a>` : esc(i.name)}</h3></div><div>${esc(i.description)}</div><div class="tags">${String(i.tech || '').split(',').map(t => t.trim()).filter(Boolean).map(t => `<span>${esc(t)}</span>`).join('')}</div></div>`; }
-    if (k === 'certifications') return `<div class="item"><div class="row"><h3>${esc(i.name)}</h3><span class="when">${esc(i.year)}</span></div><div class="sub">${esc(i.issuer)}</div></div>`;
+    if (k === 'experience') return `<div class="item"><div class="row"><h3>${parseLinks(i.role)}</h3><span class="when">${esc(i.period)}</span></div><div class="sub">${parseLinks(i.company)}</div>${bullets(i.details)}</div>`;
+    if (k === 'education') return `<div class="item"><div class="row"><h3>${parseLinks(i.degree)}</h3><span class="when">${esc(i.period)}</span></div><div class="sub">${parseLinks(i.school)}</div>${bullets(i.details)}</div>`;
+    if (k === 'projects') {
+      const u = safeUrl(i.link);
+      return `<div class="item">
+        <div class="row">
+          <h3>${u ? `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(i.name)} ↗</a>` : parseLinks(i.name)}</h3>
+        </div>
+        <div>${parseLinks(i.description)}</div>
+        <div class="tags">${String(i.tech || '').split(',').map(t => t.trim()).filter(Boolean).map(t => `<span>${esc(t)}</span>`).join('')}</div>
+      </div>`;
+    }
+    if (k === 'certifications') return `<div class="item"><div class="row"><h3>${parseLinks(i.name)}</h3><span class="when">${esc(i.year)}</span></div><div class="sub">${parseLinks(i.issuer)}</div></div>`;
   }).join('');
 }
 
@@ -253,14 +276,23 @@ function buildEditor() {
     <label>Short summary</label><input type="text" value="${esc(p.summary)}" data-p="summary">
     ${input('Email', p.email, 'data-p="email"')}${input('Phone', p.phone, 'data-p="phone"')}${input('Location', p.location, 'data-p="location"')}</details>`;
 
-  h += `<details><summary>About</summary><label>About me</label><textarea data-about>${esc(data.about)}</textarea></details>`;
+  h += `<details><summary>About</summary>
+    <label>About me</label>
+    <textarea id="ta-about" data-about>${esc(data.about)}</textarea>
+    ${linkHelperHtml('ta-about')}
+  </details>`;
 
-  // Default lists
   for (const [k, def] of Object.entries(LISTS)) {
     h += `<details><summary>${def.title}</summary>` + data[k].map((item, i) => {
-      let cardContent = def.fields.map(([f, label, type]) =>
-        type === 'area' ? `<label>${label}</label><textarea data-list="${k}" data-i="${i}" data-f="${f}">${esc(item[f])}</textarea>`
-        : `<label>${label}</label><input type="text" value="${esc(item[f])}" data-list="${k}" data-i="${i}" data-f="${f}">`).join('');
+      let cardContent = def.fields.map(([f, label, type]) => {
+        const fieldId = `field-${k}-${i}-${f}`;
+        if (type === 'area') {
+          return `<label>${label}</label>
+                  <textarea id="${fieldId}" data-list="${k}" data-i="${i}" data-f="${f}">${esc(item[f])}</textarea>
+                  ${linkHelperHtml(fieldId)}`;
+        }
+        return `<label>${label}</label><input id="${fieldId}" type="text" value="${esc(item[f])}" data-list="${k}" data-i="${i}" data-f="${f}">`;
+      }).join('');
 
       if (k === 'skills' || k === 'languages') {
         const isChecked = !!item.showLevel;
@@ -283,7 +315,6 @@ function buildEditor() {
     + `<button data-act="add" data-list="${k}">+ Add ${def.title.toLowerCase()} entry</button></details>`;
   }
 
-  // Custom Sections Accordions
   (data.customSections || []).forEach((c, cIdx) => {
     h += `<details><summary>✦ ${esc(c.title)} (Custom)</summary>
       <div style="padding:0.4rem 0; border-bottom:1px solid var(--line); margin-bottom:0.6rem;">
@@ -320,30 +351,32 @@ function buildEditor() {
         </div>
       `).join('');
     } else {
-      h += (c.items || []).map((item, i) => `
+      h += (c.items || []).map((item, i) => {
+        const detailsId = `cust-details-${cIdx}-${i}`;
+        return `
         <div class="card">
           <label>Title</label><input type="text" value="${esc(item.title)}" data-cust-list="${cIdx}" data-i="${i}" data-f="title">
           <label>Subtitle / Issuer / Org</label><input type="text" value="${esc(item.subtitle)}" data-cust-list="${cIdx}" data-i="${i}" data-f="subtitle">
           <label>Period / Year</label><input type="text" value="${esc(item.period)}" data-cust-list="${cIdx}" data-i="${i}" data-f="period">
-          <label>Details (one bullet per line)</label><textarea data-cust-list="${cIdx}" data-i="${i}" data-f="details">${esc(item.details)}</textarea>
+          <label>Details (one bullet per line)</label>
+          <textarea id="${detailsId}" data-cust-list="${cIdx}" data-i="${i}" data-f="details">${esc(item.details)}</textarea>
+          ${linkHelperHtml(detailsId)}
           <div class="tools">
             <button data-act="cust-item-up" data-cidx="${cIdx}" data-i="${i}">↑</button>
             <button data-act="cust-item-down" data-cidx="${cIdx}" data-i="${i}">↓</button>
             <button data-act="cust-item-del" data-cidx="${cIdx}" data-i="${i}">Delete</button>
           </div>
         </div>
-      `).join('');
+      `}).join('');
     }
 
     h += `<button data-act="add-custom-item" data-cidx="${cIdx}">+ Add entry to ${esc(c.title)}</button></details>`;
   });
 
-  // New Custom Section Creator Button
   h += `<div style="margin: 1rem 0;">
     <button data-act="add-new-section" style="width:100%; padding:0.6rem; font-weight:600; border-style:dashed;">+ Add Custom Section</button>
   </div>`;
 
-  // Appearance & Layout
   h += `<details><summary>Appearance & layout</summary>
     <label>Accent colour</label><input type="color" id="accent" value="${esc(s.accent)}">
     <label>Theme</label><select id="theme"><option value="light">Light</option><option value="dark">Dark</option></select>
@@ -449,7 +482,7 @@ function wireEditor() {
     } else if ('customType' in t.dataset) {
       const cIdx = +t.dataset.customType;
       data.customSections[cIdx].type = t.value;
-      data.customSections[cIdx].items = []; // reset items when format toggles
+      data.customSections[cIdx].items = [];
       save(); render(); buildEditor();
     } else if (t.dataset.act === 'toggle-side') {
       const sec = t.dataset.sec;
@@ -467,6 +500,35 @@ function wireEditor() {
 
   body.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
+
+    if (b.dataset.act === 'apply-link') {
+      const targetId = b.dataset.target;
+      const lblEl = document.getElementById(`lh-label-${targetId}`);
+      const urlEl = document.getElementById(`lh-url-${targetId}`);
+      const txtEl = document.getElementById(targetId);
+
+      const label = (lblEl?.value || '').trim();
+      const url = (urlEl?.value || '').trim();
+
+      if (!label || !url) {
+        alert('Please provide both the text portion (Label) and the URL.');
+        return;
+      }
+
+      if (txtEl) {
+        const mdLink = `[${label}](${url})`;
+        if (txtEl.value.includes(label)) {
+          txtEl.value = txtEl.value.replace(label, mdLink);
+        } else {
+          txtEl.value = txtEl.value + (txtEl.value ? ' ' : '') + mdLink;
+        }
+        txtEl.dispatchEvent(new Event('input', { bubbles: true }));
+        lblEl.value = '';
+        urlEl.value = '';
+      }
+      return;
+    }
+
     if (b.id === 'photoClear') { data.profile.photo = ''; }
     else if (b.dataset.act === 'sec-up' || b.dataset.act === 'sec-down') {
       const i = +b.dataset.i, ord = data.settings.order;
