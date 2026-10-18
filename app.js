@@ -1,6 +1,6 @@
 /* ===== Dynamic CV =====
    Data priority: browser localStorage (your edits)  >  data.json (published)  >  DEFAULTS below. */
-const KEY = 'cv-data-v2';
+const KEY = 'cv-data-v3';
 
 const DEFAULT_ORDER = ['about', 'links', 'experience', 'education', 'skills', 'projects', 'certifications', 'languages'];
 
@@ -22,8 +22,11 @@ const DEFAULTS = {
   about: 'I am a first-semester M.Sc. Data Science and Artificial Intelligence student at Ramakrishna Mission Vivekananda Educational and Research Institute (RKMVERI), with a foundational background in Physics from RKMVCC Rahara. My academic interests center around statistical inference, mathematical optimization, linear algebra, and data structures & algorithms. I actively focus on building machine learning algorithms from scratch—including KNN and multi-class Logistic Regression with gradient descent optimization—and applying regularized predictive modeling (LASSO) to complex datasets.',
   experience: [],
   education: [
-    { degree: 'M.Sc. in Data Science and Artificial Intelligence', school: 'Ramakrishna Mission Vivekananda Educational and Research Institute (RKMVERI)', period: '2026 – 2028', details: 'Focus on Machine Learning, Statistical Inference, and AI' },
-    { degree: 'B.Sc. in Physics', school: 'Ramakrishna Mission Vivekananda Centenary College (RKMVCC), Rahara', period: '2026', details: 'CGPA: 7.24/10 (66.97%)' }
+    { degree: 'M.Sc. in Data Science and Artificial Intelligence', school: 'Ramakrishna Mission Vivekananda Educational and Research Institute (RKMVERI)', period: '2026 – Present', details: 'Focus on Machine Learning, Statistical Inference, and AI' },
+    { degree: 'B.Sc. in Physics', school: 'Ramakrishna Mission Vivekananda Centenary College (RKMVCC), Rahara', period: '2023 – 2026', details: 'CGPA: 7.24/10 (66.97%)' },
+    { degree: 'Higher Secondary (Class XII) - Science', school: 'Rampur Manua K.K.I.R.R Institution (WBCHSE)', period: '2021 – 2023', details: 'Marks: 398/500 (79.6%)' },
+    { degree: 'Secondary  (Class X)', school: 'Nabin Manua Iswar Chandra High School (WBBSE)', period: '2015– 2021', details: 'Marks: 621/700 (88.71%)' },
+    { degree: 'Class I  - Class IV', school: 'Sitapur Board Primary School', period: '2011-2014', details: '' }
   ],
   skills: [
     { name: 'Python', showLevel: false, level: 80 },
@@ -69,13 +72,13 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 const safeUrl = u => /^(https?:|mailto:|tel:)/i.test(u || '') ? u : (u && /^[\w.-]+\.[a-z]{2,}/i.test(u) ? 'https://' + u : '');
 const lines = t => String(t || '').split('\n').map(s => s.trim()).filter(Boolean);
 
-/* Parse text with markdown links [label](url) */
+/* Parse text with markdown links [label](url) without adding arrow symbols */
 function parseLinks(raw) {
   if (!raw) return '';
   const escaped = esc(raw);
   return escaped.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, label, url) => {
     const valid = safeUrl(url);
-    return valid ? `<a href="${esc(valid)}" target="_blank" rel="noopener" style="color:var(--accent); text-decoration:underline;">${label} ↗</a>` : label;
+    return valid ? `<a href="${esc(valid)}" target="_blank" rel="noopener" style="color:var(--accent); text-decoration:underline; font-weight:500;">${label}</a>` : label;
   });
 }
 
@@ -123,9 +126,9 @@ function linkHelperHtml(targetId) {
   return `
     <div class="link-helper-box">
       <div style="font-weight:600; font-size:0.75rem; color:var(--muted);">🔗 Make text into a link</div>
-      <label>Portion of text (Label)</label>
+      <label>Portion of text to link (Label)</label>
       <input type="text" id="lh-label-${targetId}" placeholder="e.g. RKMVERI">
-      <label>URL (Link)</label>
+      <label>URL</label>
       <input type="text" id="lh-url-${targetId}" placeholder="https://...">
       <button type="button" data-act="apply-link" data-target="${targetId}">Insert Link</button>
     </div>
@@ -507,24 +510,37 @@ function wireEditor() {
       const urlEl = document.getElementById(`lh-url-${targetId}`);
       const txtEl = document.getElementById(targetId);
 
-      const label = (lblEl?.value || '').trim();
       const url = (urlEl?.value || '').trim();
+      let label = (lblEl?.value || '').trim();
 
-      if (!label || !url) {
-        alert('Please provide both the text portion (Label) and the URL.');
+      if (!url) {
+        alert('Please enter a URL.');
         return;
       }
 
       if (txtEl) {
-        const mdLink = `[${label}](${url})`;
-        if (txtEl.value.includes(label)) {
-          txtEl.value = txtEl.value.replace(label, mdLink);
+        const start = txtEl.selectionStart;
+        const end = txtEl.selectionEnd;
+        if (start !== undefined && start !== end) {
+          const selectedText = txtEl.value.substring(start, end);
+          txtEl.value = txtEl.value.substring(0, start) + `[${selectedText}](${url})` + txtEl.value.substring(end);
+        } else if (label) {
+          const escapedPattern = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const regex = new RegExp(escapedPattern, 'i');
+          if (regex.test(txtEl.value)) {
+            txtEl.value = txtEl.value.replace(regex, match => `[${match}](${url})`);
+          } else {
+            alert(`The phrase "${label}" was not found in the field above.`);
+            return;
+          }
         } else {
-          txtEl.value = txtEl.value + (txtEl.value ? ' ' : '') + mdLink;
+          alert('Highlight a portion of text or type the exact phrase in the Label field.');
+          return;
         }
+
         txtEl.dispatchEvent(new Event('input', { bubbles: true }));
-        lblEl.value = '';
-        urlEl.value = '';
+        if (lblEl) lblEl.value = '';
+        if (urlEl) urlEl.value = '';
       }
       return;
     }
