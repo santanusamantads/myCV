@@ -181,7 +181,7 @@ function render() {
     sideHtml += `</div>`;
 
     let mainHtml = `<div class="cv-main">`;
-    for (const k of mainKeys) mainHtml += `<section id="${k}"><h2>${esc(getSectionTitle(k))}</h2>${renderSection(k)}</h2>${renderSection(k)}</section>`;
+    for (const k of mainKeys) mainHtml += `<section id="${k}"><h2>${esc(getSectionTitle(k))}</h2>${renderSection(k)}</section>`;
     mainHtml += `</div>`;
 
     cvEl.innerHTML = sideHtml + mainHtml;
