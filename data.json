@@ -27,13 +27,13 @@
   "education": [
     {
       "degree": "M.Sc. in Data Science and Artificial Intelligence",
-      "school": "Ramakrishna Mission Vivekananda Educational and Research Institute (RKMVERI)",
+      "school": "Ramakrishna Mission Vivekananda Educational and Research Institute ([RKMVERI](https://rkmvu.ac.in/))",
       "period": "2026 – Present",
       "details": "Focus on Machine Learning, Statistical Inference, and AI"
     },
     {
       "degree": "B.Sc. in Physics",
-      "school": "Ramakrishna Mission Vivekananda Centenary College (RKMVCC), Rahara",
+      "school": "Ramakrishna Mission Vivekananda Centenary College ([RKMVCC](https://rkmvccrahara.org/)), Rahara",
       "period": "2023 – 2026",
       "details": "CGPA: 7.24/10 (66.97%)"
     },
@@ -110,8 +110,11 @@
       "level": 85
     }
   ],
+  "disabledLinks": [],
+  "customSections": [],
   "settings": {
     "accent": "#2563eb",
+    "linkColor": "#485d65",
     "theme": "dark",
     "sidebarLayout": "left",
     "sidebarSections": [
