@@ -352,50 +352,6 @@ a.chip:hover {
   box-shadow: var(--shadow-sm);
 }
 
-/* ===== Education Vertical Timeline ===== */
-.timeline-container {
-  position: relative;
-  padding-left: 2rem;
-  margin: 0.5rem 0;
-}
-
-.timeline-container::before {
-  content: "";
-  position: absolute;
-  top: 0.4rem;
-  bottom: 0.4rem;
-  left: 7px;
-  width: 2px;
-  background: var(--line);
-}
-
-.timeline-item {
-  position: relative;
-  padding-bottom: 1.8rem;
-}
-
-.timeline-item:last-child {
-  padding-bottom: 0.2rem;
-}
-
-.timeline-node {
-  position: absolute;
-  left: -2rem;
-  top: 0.3rem;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--card);
-  border: 3.5px solid var(--accent);
-  transition: var(--transition);
-}
-
-.timeline-item:hover .timeline-node {
-  background: var(--accent);
-  transform: scale(1.2);
-  box-shadow: 0 0 10px var(--accent);
-}
-
 /* Standard Item Cards */
 .item {
   padding: 0.2rem 0 1.25rem;
@@ -1053,13 +1009,6 @@ textarea {
     padding: 0.75rem 0 !important;
     break-inside: avoid;
     background: transparent !important;
-  }
-  .timeline-container::before {
-    background: #cbd5e1 !important;
-  }
-  .timeline-node {
-    border-color: #000000 !important;
-    background: #ffffff !important;
   }
   a {
     color: #000000 !important;

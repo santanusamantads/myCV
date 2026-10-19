@@ -339,13 +339,16 @@ function renderSection(k) {
 
   // Education: Vertical Timeline
   if (k === 'education') {
-    return `<div class="timeline-container">${list.map(i => `
-      <div class="timeline-item">
-        <div class="timeline-node" aria-hidden="true"></div>
-        <div class="row"><h3>${parseLinks(i.degree)}</h3><span class="when">${esc(i.period)}</span></div>
-        <div class="sub">${parseLinks(i.school)}</div>${bullets(i.details)}
+    return list.map(i => `
+      <div class="item">
+        <div class="row">
+          <h3>${parseLinks(i.degree)}</h3>
+          <span class="when">${esc(i.period)}</span>
+        </div>
+        <div class="sub">${parseLinks(i.school)}</div>
+        ${bullets(i.details)}
       </div>
-    `).join('')}</div>`;
+    `).join('');
   }
 
   // Projects: Interactive Grid
