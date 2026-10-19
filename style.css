@@ -230,3 +230,81 @@ a.custom-link:hover,
   font-size: 0.8rem;
   margin-top: 0.2rem;
 }
+/* Make profile photo show it is clickable */
+.hero img {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hero img:hover {
+  transform: scale(1.03);
+  box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+/* Fullscreen Lightbox Backdrop */
+.photo-lightbox {
+  position: fixed;
+  z-index: 1000;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.photo-lightbox[hidden] {
+  display: none !important;
+}
+
+/* Lightbox Image with Smooth Zoom Animation */
+.lightbox-content {
+  max-width: 90vw;
+  max-height: 85vh;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+  animation: zoomDp 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Close Button */
+.lightbox-close {
+  position: absolute;
+  top: 1.5rem;
+  right: 2rem;
+  color: #fff;
+  font-size: 2.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  line-height: 1;
+  transition: opacity 0.2s;
+  user-select: none;
+}
+
+.lightbox-close:hover {
+  opacity: 0.7;
+}
+
+@keyframes zoomDp {
+  from {
+    transform: scale(0.65);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

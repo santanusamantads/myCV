@@ -1,6 +1,6 @@
 /* ===== Dynamic CV =====
    Data priority: browser localStorage (your edits)  >  data.json (published)  >  DEFAULTS below. */
-const KEY = 'cv-data-v4';
+const KEY = 'cv-data-v5';
 
 const DEFAULT_ORDER = ['about', 'links', 'experience', 'education', 'skills', 'projects', 'certifications', 'languages'];
 
@@ -47,7 +47,7 @@ const DEFAULTS = {
   customSections: [],
   settings: {
     accent: '#2563eb',
-    linkColor: '#38bdf8', // Independent color for clickable texts
+    linkColor: '#38bdf8',
     theme: 'dark',
     sidebarLayout: 'left',
     sidebarSections: ['skills', 'languages'],
@@ -163,7 +163,7 @@ function render() {
   }
 
   const heroHtml = `<section class="hero" id="top">
-    ${p.photo ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}">` : `<div class="avatar">👤</div>`}
+    ${p.photo ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" title="Click to view full photo">` : `<div class="avatar">👤</div>`}
     <div><h1>${esc(p.name)}</h1><div class="title">${esc(p.title)}</div><p>${esc(p.summary)}</p><div class="chips">${chips.join('')}</div></div></section>`;
 
   const cvEl = $('#cv');
@@ -656,5 +656,28 @@ async function load() {
     try { localStorage.removeItem(KEY); } catch {}
     location.reload();
   };
+
+  /* ----- Profile Photo Lightbox Event Handlers ----- */
+  const photoModal = $('#photoModal');
+  const lightboxImg = $('#lightboxImg');
+
+  $('#cv').addEventListener('click', e => {
+    const img = e.target.closest('.hero img');
+    if (img && img.src) {
+      lightboxImg.src = img.src;
+      photoModal.hidden = false;
+    }
+  });
+
+  if (photoModal) {
+    photoModal.onclick = () => { photoModal.hidden = true; };
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && photoModal && !photoModal.hidden) {
+      photoModal.hidden = true;
+    }
+  });
+
   wireEditor();
 })();
