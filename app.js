@@ -1,6 +1,6 @@
-/* ===== Dynamic CV =====
+/* ===== Dynamic CV & Portfolio Engine =====
    Data priority: browser localStorage (your edits)  >  data.json (published)  >  DEFAULTS below. */
-const KEY = 'cv-data-v9';
+const KEY = 'cv-data-v10';
 
 const DEFAULT_ORDER = ['about', 'links', 'experience', 'education', 'skills', 'projects', 'certifications', 'languages'];
 
@@ -25,8 +25,8 @@ const DEFAULTS = {
     { degree: 'M.Sc. in Data Science and Artificial Intelligence', school: 'Ramakrishna Mission Vivekananda Educational and Research Institute ([RKMVERI](https://rkmvu.ac.in/))', period: '2026 – Present', details: 'Focus on Machine Learning, Statistical Inference, and AI' },
     { degree: 'B.Sc. in Physics', school: 'Ramakrishna Mission Vivekananda Centenary College ([RKMVCC](https://rkmvccrahara.org/)), Rahara', period: '2023 – 2026', details: 'CGPA: 7.24/10 (66.97%)' },
     { degree: 'Higher Secondary (Class XII) - Science', school: 'Rampur Manua K.K.I.R.R Institution (WBCHSE)', period: '2021 – 2023', details: 'Marks: 398/500 (79.6%)' },
-    { degree: 'Secondary  (Class X)', school: 'Nabin Manua Iswar Chandra High School (WBBSE)', period: '2015– 2021', details: 'Marks: 621/700 (88.71%)' },
-    { degree: 'Class I  - Class IV', school: 'Sitapur Board Primary School', period: '2011-2014', details: '' }
+    { degree: 'Secondary (Class X)', school: 'Nabin Manua Iswar Chandra High School (WBBSE)', period: '2015 – 2021', details: 'Marks: 621/700 (88.71%)' },
+    { degree: 'Class I - Class IV', school: 'Sitapur Board Primary School', period: '2011 – 2014', details: '' }
   ],
   skills: [
     { name: 'Python', showLevel: false, level: 80 },
@@ -70,11 +70,12 @@ const LISTS = {
 
 let data = structuredClone(DEFAULTS);
 const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const safeUrl = u => /^(https?:|mailto:|tel:)/i.test(u || '') ? u : (u && /^[\w.-]+\.[a-z]{2,}/i.test(u) ? 'https://' + u : '');
 const lines = t => String(t || '').split('\n').map(s => s.trim()).filter(Boolean);
 
-/* Parse text with markdown links [label](url), checking if the link is disabled */
+/* Parse text with markdown links [label](url), checking disabled status */
 function parseLinks(raw) {
   if (!raw) return '';
   const escaped = esc(raw);
@@ -88,7 +89,6 @@ function parseLinks(raw) {
   });
 }
 
-/* Extract all [label](url) pairs from an object or string */
 function extractLinksFromData(obj) {
   const found = [];
   const str = JSON.stringify(obj || {});
@@ -111,7 +111,14 @@ const merge = (base, over) => {
   }
   return out;
 };
-const save = () => { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { alert('Could not save (storage full?). Use a smaller photo or download data.json.'); } };
+
+const save = () => { 
+  try { 
+    localStorage.setItem(KEY, JSON.stringify(data)); 
+  } catch (e) { 
+    alert('Could not save to browser storage. Use a smaller photo or download data.json.'); 
+  } 
+};
 
 function getSectionTitle(k) {
   if (k === 'about') return 'About';
@@ -142,7 +149,7 @@ function getLinksChips() {
   }).join('');
 }
 
-/* Single link-builder box for an entry */
+/* Helper HTML for single per-entry link creator */
 function entryLinkHelperHtml(scopeId) {
   return `
     <div class="link-helper-box" style="margin-top:0.8rem; border-top:1px dashed var(--line); padding-top:0.6rem;">
@@ -178,7 +185,7 @@ function sectionLinksRecordHtml(secKey, links) {
                 <input type="checkbox" data-act="toggle-link-status" data-url="${esc(l.url)}" ${isChecked ? 'checked' : ''}>
                 <span><strong>${esc(l.label)}</strong> <span style="font-size:0.75rem; color:var(--muted);">(${esc(l.url.replace(/^https?:\/\//, ''))})</span></span>
               </label>
-              <button type="button" data-act="remove-markdown-link" data-sec="${secKey}" data-label="${esc(l.label)}" data-url="${esc(l.url)}" title="Remove link completely" style="padding:1px 6px; font-size:0.75rem; border:none; background:transparent; cursor:pointer; color:#d92d20;">✕</button>
+              <button type="button" data-act="remove-markdown-link" data-sec="${secKey}" data-label="${esc(l.label)}" data-url="${esc(l.url)}" title="Remove link completely" style="padding:1px 6px; font-size:0.75rem; border:none; background:transparent; cursor:pointer; color:#ef4444;">✕</button>
             </div>
           `;
         }).join('')}
@@ -199,7 +206,7 @@ function render() {
   document.documentElement.style.setProperty('--accent', s.accent);
   document.documentElement.style.setProperty('--link-color', s.linkColor);
   document.documentElement.dataset.theme = s.theme;
-  document.title = (p.name || 'CV') + ' – CV';
+  document.title = (p.name || 'Santanu Samanta') + ' – CV & Portfolio';
 
   const chips = [];
   if (p.location) chips.push(`<span class="chip">📍 ${esc(p.location)}</span>`);
@@ -215,7 +222,31 @@ function render() {
 
   const heroHtml = `<section class="hero" id="top">
     ${p.photo ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}" title="Click to view full photo">` : `<div class="avatar">👤</div>`}
-    <div><h1>${esc(p.name)}</h1><div class="title">${esc(p.title)}</div><p>${esc(p.summary)}</p><div class="chips">${chips.join('')}</div></div></section>`;
+    <div style="flex: 1; min-width: 260px;">
+      <h1>${esc(p.name)}</h1>
+      <div class="title">${esc(p.title)}</div>
+      <p>${esc(p.summary)}</p>
+      <div class="chips">${chips.join('')}</div>
+      <div class="hero-cta-group no-print">
+        <button type="button" class="primary hero-btn" onclick="window.print()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Download CV
+        </button>
+        ${p.email ? `
+        <a href="mailto:${esc(p.email)}" class="hero-btn" style="border:1px solid var(--line); color:var(--text); background:var(--card);">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+          </svg>
+          Contact me
+        </a>` : ''}
+      </div>
+    </div>
+  </section>`;
 
   const cvEl = $('#cv');
   let visible = s.order.filter(k => s.show[k]);
@@ -244,23 +275,26 @@ function render() {
     cvEl.innerHTML = sideHtml + mainHtml;
   }
 
-  $('#nav').innerHTML = visible.map(k => `<a href="#${k}">${esc(getSectionTitle(k))}</a>`).join('');
+  // Generate Navigation Links
+  $('#nav').innerHTML = visible.map(k => `<a href="#${k}" class="nav-item">${esc(getSectionTitle(k))}</a>`).join('');
+  setupScrollSpy();
 }
 
 function renderSection(k) {
   if (k === 'about') {
     let out = data.about ? `<p>${parseLinks(data.about).replace(/\n/g, '<br>')}</p>` : '<p class="empty">Nothing here yet.</p>';
     if (data.settings.linksPlacement === 'about' && data.settings.show.links) {
-      out += `<div class="chips" style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.8rem;">${getLinksChips()}</div>`;
+      out += `<div class="chips" style="margin-top:0.8rem;">${getLinksChips()}</div>`;
     }
     return out;
   }
   
   if (k === 'links') {
     const content = getLinksChips();
-    return content ? `<div class="chips" style="display:flex; flex-wrap:wrap; gap:0.5rem;">${content}</div>` : '<p class="empty">Nothing here yet.</p>';
+    return content ? `<div class="chips">${content}</div>` : '<p class="empty">Nothing here yet.</p>';
   }
 
+  // Custom Sections
   const custom = (data.customSections || []).find(c => c.id === k);
   if (custom) {
     if (!custom.items || !custom.items.length) return '<p class="empty">Nothing here yet.</p>';
@@ -273,7 +307,7 @@ function renderSection(k) {
           return `<div><div class="row" style="display:flex;justify-content:space-between"><span>${esc(i.name)}</span><span class="when">${lvl}%</span></div><div class="bar"><i style="width:${lvl}%"></i></div></div>`;
         }).join('')}</div>`;
       }
-      return `<div class="chips" style="display:flex; flex-wrap:wrap; gap:0.5rem;">${custom.items.map(i => `<span class="chip" style="font-size:0.95rem; padding:0.4rem 0.8rem;">${esc(i.name)}</span>`).join('')}</div>`;
+      return `<div class="chips">${custom.items.map(i => `<span class="chip" style="font-size:0.95rem; padding:0.4rem 0.8rem;">${esc(i.name)}</span>`).join('')}</div>`;
     } else {
       const bullets = d => lines(d).length ? `<ul>${lines(d).map(x => `<li>${parseLinks(x)}</li>`).join('')}</ul>` : '';
       return custom.items.map(i => `
@@ -290,6 +324,7 @@ function renderSection(k) {
   if (!list || !list.length) return '<p class="empty">Nothing here yet.</p>';
   const bullets = d => lines(d).length ? `<ul>${lines(d).map(x => `<li>${parseLinks(x)}</li>`).join('')}</ul>` : '';
 
+  // Skills & Languages (Chips or Level bars)
   if (k === 'skills' || k === 'languages') {
     const hasAnyBar = list.some(i => i.showLevel);
     if (hasAnyBar) {
@@ -299,27 +334,46 @@ function renderSection(k) {
         return `<div><div class="row" style="display:flex;justify-content:space-between"><span>${esc(i.name)}</span><span class="when">${lvl}%</span></div><div class="bar"><i style="width:${lvl}%"></i></div></div>`;
       }).join('')}</div>`;
     }
-    return `<div class="chips" style="display:flex; flex-wrap:wrap; gap:0.5rem;">${list.map(i => `<span class="chip" style="font-size:0.95rem; padding:0.4rem 0.8rem;">${esc(i.name)}</span>`).join('')}</div>`;
+    return `<div class="chips">${list.map(i => `<span class="chip" style="font-size:0.95rem; padding:0.4rem 0.8rem;">${esc(i.name)}</span>`).join('')}</div>`;
   }
 
+  // Education: Vertical Timeline
+  if (k === 'education') {
+    return `<div class="timeline-container">${list.map(i => `
+      <div class="timeline-item">
+        <div class="timeline-node" aria-hidden="true"></div>
+        <div class="row"><h3>${parseLinks(i.degree)}</h3><span class="when">${esc(i.period)}</span></div>
+        <div class="sub">${parseLinks(i.school)}</div>${bullets(i.details)}
+      </div>
+    `).join('')}</div>`;
+  }
+
+  // Projects: Interactive Grid
+  if (k === 'projects') {
+    return `<div class="projects-grid">${list.map(i => {
+      const u = safeUrl(i.link);
+      return `
+        <div class="project-card">
+          <div>
+            <div class="row" style="margin-bottom:0.4rem;">
+              <h3>${u ? `<a href="${esc(u)}" target="_blank" rel="noopener" class="custom-link">${esc(i.name)} ↗</a>` : parseLinks(i.name)}</h3>
+            </div>
+            <p class="project-desc">${parseLinks(i.description)}</p>
+          </div>
+          <div class="tags">${String(i.tech || '').split(',').map(t => t.trim()).filter(Boolean).map(t => `<span>${esc(t)}</span>`).join('')}</div>
+        </div>
+      `;
+    }).join('')}</div>`;
+  }
+
+  // Experience & Certifications
   return list.map(i => {
     if (k === 'experience') return `<div class="item"><div class="row"><h3>${parseLinks(i.role)}</h3><span class="when">${esc(i.period)}</span></div><div class="sub">${parseLinks(i.company)}</div>${bullets(i.details)}</div>`;
-    if (k === 'education') return `<div class="item"><div class="row"><h3>${parseLinks(i.degree)}</h3><span class="when">${esc(i.period)}</span></div><div class="sub">${parseLinks(i.school)}</div>${bullets(i.details)}</div>`;
-    if (k === 'projects') {
-      const u = safeUrl(i.link);
-      return `<div class="item">
-        <div class="row">
-          <h3>${u ? `<a href="${esc(u)}" target="_blank" rel="noopener" class="custom-link">${esc(i.name)} ↗</a>` : parseLinks(i.name)}</h3>
-        </div>
-        <div>${parseLinks(i.description)}</div>
-        <div class="tags">${String(i.tech || '').split(',').map(t => t.trim()).filter(Boolean).map(t => `<span>${esc(t)}</span>`).join('')}</div>
-      </div>`;
-    }
     if (k === 'certifications') return `<div class="item"><div class="row"><h3>${parseLinks(i.name)}</h3><span class="when">${esc(i.year)}</span></div><div class="sub">${parseLinks(i.issuer)}</div></div>`;
   }).join('');
 }
 
-/* ---------- Editor ---------- */
+/* ---------- Editor Drawer ---------- */
 const input = (label, val, attrs = '') => `<label>${label}</label><input type="text" value="${esc(val)}" ${attrs}>`;
 
 function buildEditor() {
@@ -334,7 +388,6 @@ function buildEditor() {
     <label>Short summary</label><input type="text" value="${esc(p.summary)}" data-p="summary">
     ${input('Email', p.email, 'data-p="email"')}${input('Phone', p.phone, 'data-p="phone"')}${input('Location', p.location, 'data-p="location"')}</details>`;
 
-  // About Section with entry link tool + link record checklist
   const aboutLinks = extractLinksFromData(data.about);
   h += `<details><summary>About</summary>
     <div id="card-about" class="entry-scope-box">
@@ -345,7 +398,6 @@ function buildEditor() {
     ${sectionLinksRecordHtml('about', aboutLinks)}
   </details>`;
 
-  // Standard List Sections
   for (const [k, def] of Object.entries(LISTS)) {
     const sectionLinks = extractLinksFromData(data[k]);
     const isTextBased = ['education', 'experience', 'projects', 'certifications'].includes(k);
@@ -387,7 +439,6 @@ function buildEditor() {
     </details>`;
   }
 
-  // Custom Sections
   (data.customSections || []).forEach((c, cIdx) => {
     const customLinks = extractLinksFromData(c.items);
     h += `<details><summary>✦ ${esc(c.title)} (Custom)</summary>
@@ -395,7 +446,7 @@ function buildEditor() {
         <label>Section Title</label>
         <input type="text" value="${esc(c.title)}" data-custom-title="${cIdx}">
         <label style="margin-top:0.4rem;">Format / Style</label>
-        <select data-custom-type="${cIdx}" style="width:100%; padding:.4rem; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--text);">
+        <select data-custom-type="${cIdx}">
           <option value="cards" ${c.type === 'cards' ? 'selected' : ''}>Timeline Cards (Like Experience/Education)</option>
           <option value="tags" ${c.type === 'tags' ? 'selected' : ''}>Chips / Tags (Like Skills)</option>
         </select>
@@ -453,7 +504,7 @@ function buildEditor() {
     <button data-act="add-new-section" style="width:100%; padding:0.6rem; font-weight:600; border-style:dashed;">+ Add Custom Section</button>
   </div>`;
 
-  // Appearance & Layout
+  // Appearance & Layout Options
   h += `<details><summary>Appearance & layout</summary>
     <div style="display:flex; gap:1rem; align-items:center;">
       <div style="flex:1;">
@@ -592,7 +643,7 @@ function wireEditor() {
       save(); render();
     } else if (t.id === 'photoFile' && t.files[0]) {
       try { data.profile.photo = await resizeImage(t.files[0]); save(); render(); buildEditor(); }
-      catch { alert('Could not read that image.'); }
+      catch { alert('Could not read image file.'); }
     }
   });
 
@@ -609,13 +660,12 @@ function wireEditor() {
       let label = (lblEl?.value || '').trim();
 
       if (!url) {
-        alert('Please enter a URL.');
+        alert('Please enter a valid URL.');
         return;
       }
 
       if (scopeContainer) {
         const fields = [...scopeContainer.querySelectorAll('textarea, input[type="text"]')].filter(el => !el.id.startsWith('lh-'));
-        
         let found = false;
         const escapedPattern = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const regex = new RegExp(escapedPattern, 'i');
@@ -634,7 +684,7 @@ function wireEditor() {
 
         if (!found) {
           if (!label) {
-            alert('Highlight text inside this entry or type the exact text to link in the Label field.');
+            alert('Highlight text or type the exact phrase in the Label field.');
             return;
           }
           for (const f of fields) {
@@ -689,12 +739,7 @@ function wireEditor() {
       if (b.dataset.act === 'sec-down' && i < ord.length - 1) [ord[i + 1], ord[i]] = [ord[i], ord[i + 1]];
     }
     else if (b.dataset.act === 'add-new-section') {
-      const newSec = {
-        id: `custom_${Date.now()}`,
-        title: 'New Section',
-        type: 'cards',
-        items: []
-      };
+      const newSec = { id: `custom_${Date.now()}`, title: 'New Section', type: 'cards', items: [] };
       if (!data.customSections) data.customSections = [];
       data.customSections.push(newSec);
       syncOrderAndShow();
@@ -746,7 +791,67 @@ function wireEditor() {
   });
 }
 
-/* ---------- Boot ---------- */
+/* Scroll-Spy: Highlights Active Nav Link while Scrolling */
+function setupScrollSpy() {
+  const sections = $$('main section[id]'); const navLinks = $$('#nav a');
+  
+  if (!sections.length || !navLinks.length) return;
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.getAttribute('id');
+        navLinks.forEach(link => {
+          link.classList.toggle('active', link.getAttribute('href') === `#${id}`);
+        });
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+
+  sections.forEach(sec => observer.observe(sec));
+}
+
+/* Typewriter animation controller for intro splash */
+function startTypewriter() {
+  const el = $('#welcomeTypewriter');
+  if (!el) return;
+  const phrases = [
+    'Data Science & AI Student',
+    'Machine Learning Enthusiast',
+    'Problem Solver'
+  ];
+  let phraseIdx = 0;
+  let charIdx = 0;
+  let isDeleting = false;
+
+  function typeTick() {
+    const current = phrases[phraseIdx];
+    if (isDeleting) {
+      el.textContent = current.substring(0, charIdx - 1);
+      charIdx--;
+    } else {
+      el.textContent = current.substring(0, charIdx + 1);
+      charIdx++;
+    }
+
+    let speed = isDeleting ? 40 : 80;
+
+    if (!isDeleting && charIdx === current.length) {
+      speed = 1200; // Pause at end of phrase
+      isDeleting = true;
+    } else if (isDeleting && charIdx === 0) {
+      isDeleting = false;
+      phraseIdx = (phraseIdx + 1) % phrases.length;
+      speed = 400; // Pause before typing next phrase
+    }
+
+    setTimeout(typeTick, speed);
+  }
+
+  typeTick();
+}
+
+/* ---------- Boot & Initialization ---------- */
 async function load() {
   let stored = null;
   try { stored = JSON.parse(localStorage.getItem(KEY)); } catch {}
@@ -755,12 +860,19 @@ async function load() {
 }
 
 (async function init() {
-  await load(); render();
+  await load(); 
+  render();
+
   const ed = $('#editor');
   $('#btnEdit').onclick = () => { buildEditor(); ed.hidden = false; };
   $('#btnClose').onclick = () => ed.hidden = true;
   $('#btnPrint').onclick = () => window.print();
-  $('#btnTheme').onclick = () => { data.settings.theme = data.settings.theme === 'dark' ? 'light' : 'dark'; save(); render(); };
+  $('#btnTheme').onclick = () => { 
+    data.settings.theme = data.settings.theme === 'dark' ? 'light' : 'dark'; 
+    save(); 
+    render(); 
+  };
+  
   $('#btnExport').onclick = () => {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
@@ -768,8 +880,12 @@ async function load() {
   };
   $('#btnImport').onclick = () => $('#fileImport').click();
   $('#fileImport').onchange = async e => {
-    try { data = merge(DEFAULTS, JSON.parse(await e.target.files[0].text())); save(); render(); buildEditor(); }
-    catch { alert('Invalid JSON file.'); }
+    try { 
+      data = merge(DEFAULTS, JSON.parse(await e.target.files[0].text())); 
+      save(); render(); buildEditor(); 
+    } catch { 
+      alert('Invalid JSON file.'); 
+    }
   };
   $('#btnReset').onclick = () => {
     if (!confirm('Discard your browser edits and go back to the published version?')) return;
@@ -777,7 +893,32 @@ async function load() {
     location.reload();
   };
 
-  /* ----- Profile Photo Lightbox Event Handlers ----- */
+  /* Mobile Navigation Hamburger Menu */
+  const mobileToggle = $('#btnMobileNav');
+  const navLinks = $('#nav');
+  if (mobileToggle && navLinks) {
+    mobileToggle.onclick = () => {
+      const open = navLinks.classList.toggle('open');
+      mobileToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    };
+    navLinks.addEventListener('click', e => {
+      if (e.target.tagName === 'A') {
+        navLinks.classList.remove('open');
+        mobileToggle.setAttribute('aria-expanded', 'false');
+      }
+    });
+  }
+
+  /* Floating Back to Top Button */
+  const btt = $('#btnBackToTop');
+  if (btt) {
+    window.addEventListener('scroll', () => {
+      btt.classList.toggle('show', window.scrollY > 350);
+    });
+    btt.onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /* Profile Photo Lightbox Modal */
   const photoModal = $('#photoModal');
   const lightboxImg = $('#lightboxImg');
 
@@ -799,23 +940,26 @@ async function load() {
     }
   });
 
-  /* ----- Professional Welcoming Intro Animation Handler ----- */
+  /* Welcoming Intro Splash Controller with Session Storage */
   const splash = $('#welcomeSplash');
   const splashImg = $('#welcomePhoto');
 
   if (splash) {
-    if (splashImg) {
-      if (data.profile && data.profile.photo) {
+    const hasSeenWelcome = sessionStorage.getItem('cv_welcome_shown');
+    if (hasSeenWelcome) {
+      splash.remove();
+    } else {
+      if (splashImg && data.profile && data.profile.photo) {
         splashImg.src = data.profile.photo;
-      } else {
-        splashImg.style.display = 'none';
       }
-    }
+      startTypewriter();
 
-    setTimeout(() => {
-      splash.classList.add('hide-welcome');
-      setTimeout(() => splash.remove(), 700);
-    }, 1800);
+      setTimeout(() => {
+        splash.classList.add('hide-welcome');
+        sessionStorage.setItem('cv_welcome_shown', 'true');
+        setTimeout(() => splash.remove(), 700);
+      }, 2400);
+    }
   }
 
   wireEditor();

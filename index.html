@@ -1,59 +1,99 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>My CV</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Santanu Samanta – CV & Portfolio</title>
+  
+  <!-- Typography: Inter font with system fallback -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<!-- Professional Welcoming Splash Intro -->
-<div id="welcomeSplash" class="welcome-overlay no-print">
-  <div class="welcome-card">
-    <div class="welcome-avatar-wrapper">
-      <img id="welcomePhoto" src="" alt="Santanu Samanta" class="welcome-avatar">
+
+  <!-- Background Decorative Glowing Orbs -->
+  <div class="bg-glow-orb orb-1 no-print" aria-hidden="true"></div>
+  <div class="bg-glow-orb orb-2 no-print" aria-hidden="true"></div>
+
+  <!-- Professional Welcoming Splash Intro -->
+  <aside id="welcomeSplash" class="welcome-overlay no-print" aria-label="Welcome screen">
+    <div class="welcome-card">
+      <div class="welcome-avatar-wrapper">
+        <img id="welcomePhoto" src="" alt="Santanu Samanta" class="welcome-avatar">
+      </div>
+      <div class="welcome-badge">Welcome to my Portfolio</div>
+      <h1 class="welcome-name">Santanu Samanta</h1>
+      <div class="welcome-line" aria-hidden="true"></div>
+      <p class="welcome-sub">
+        <span id="welcomeTypewriter" class="typewriter-text">Data Science &amp; AI Student</span>
+        <span class="typewriter-cursor" aria-hidden="true">|</span>
+      </p>
     </div>
-    <div class="welcome-badge">Welcome to my Portfolio</div>
-    <h1 class="welcome-name">Santanu Samanta</h1>
-    <div class="welcome-line"></div>
-    <p class="welcome-sub">M.Sc. Data Science & AI Student</p>
+  </aside>
+
+  <!-- Sticky Top Navigation Bar -->
+  <header class="topbar no-print">
+    <div class="topbar-brand">
+      <a href="#top" class="brand-link">Santanu<span class="brand-dot">.</span></a>
+    </div>
+
+    <button id="btnMobileNav" class="mobile-nav-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="3" y1="12" x2="21" y2="12"></line>
+        <line x1="3" y1="6" x2="21" y2="6"></line>
+        <line x1="3" y1="18" x2="21" y2="18"></line>
+      </svg>
+    </button>
+
+    <nav id="nav" class="nav-links" aria-label="Primary navigation"></nav>
+
+    <div class="actions">
+      <button id="btnTheme" title="Toggle dark / light mode" aria-label="Toggle color theme">◐</button>
+      <button id="btnPrint" title="Print CV or save as PDF" aria-label="Print or save as PDF">PDF</button>
+      <button id="btnEdit" class="primary" title="Open CV Editor drawer">✎ Edit</button>
+    </div>
+  </header>
+
+  <!-- Main Renderable Container -->
+  <main id="cv" role="main"></main>
+
+  <!-- Footer -->
+  <footer class="site-footer no-print">
+    <p>Designed &amp; Built with plain HTML, CSS &amp; Vanilla JS · Hosted on GitHub Pages</p>
+  </footer>
+
+  <!-- Floating Back to Top Button -->
+  <button id="btnBackToTop" class="back-to-top no-print" aria-label="Back to top of page" title="Back to top">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="18 15 12 9 6 15"></polyline>
+    </svg>
+  </button>
+
+  <!-- In-Browser Editor Drawer -->
+  <aside id="editor" class="no-print" hidden aria-label="CV Content Editor">
+    <div class="ed-head">
+      <strong>Edit CV</strong>
+      <button id="btnClose" aria-label="Close editor">✕</button>
+    </div>
+    <div class="ed-body" id="edBody"></div>
+    <div class="ed-foot">
+      <button id="btnExport" class="primary">⬇ Download data.json</button>
+      <button id="btnImport">⬆ Import</button>
+      <button id="btnReset" class="danger">Reset</button>
+      <input type="file" id="fileImport" accept="application/json" hidden>
+      <p class="hint">Changes auto-save in your browser. Download <code>data.json</code> and commit to your repo to publish for visitors.</p>
+    </div>
+  </aside>
+
+  <!-- Photo Full-View Lightbox Modal -->
+  <div id="photoModal" class="photo-lightbox" hidden role="dialog" aria-modal="true" aria-label="Profile photo full view">
+    <span class="lightbox-close" aria-label="Close photo preview">&times;</span>
+    <img id="lightboxImg" class="lightbox-content" alt="Santanu Samanta full view">
   </div>
-</div>
 
-<header class="topbar no-print">
-  <nav id="nav"></nav>
-  <div class="actions">
-    <button id="btnTheme" title="Toggle dark / light">◐</button>
-    <button id="btnPrint" title="Print or save as PDF">PDF</button>
-    <button id="btnEdit" class="primary">✎ Edit</button>
-  </div>
-</header>
-
-<main id="cv"></main>
-<footer class="no-print">Built with plain HTML/CSS/JS · hosted on GitHub Pages</footer>
-
-<!-- Editor drawer -->
-<aside id="editor" class="no-print" hidden>
-  <div class="ed-head">
-    <strong>Edit CV</strong>
-    <button id="btnClose">✕</button>
-  </div>
-  <div class="ed-body" id="edBody"></div>
-  <div class="ed-foot">
-    <button id="btnExport" class="primary">⬇ Download data.json</button>
-    <button id="btnImport">⬆ Import</button>
-    <button id="btnReset" class="danger">Reset</button>
-    <input type="file" id="fileImport" accept="application/json" hidden>
-    <p class="hint">Changes auto-save in this browser. To publish them for everyone, download <code>data.json</code>, put it in your repo and commit.</p>
-  </div>
-</aside>
-
-<!-- Photo Full-View Lightbox Modal -->
-<div id="photoModal" class="photo-lightbox" hidden>
-  <span class="lightbox-close">&times;</span>
-  <img id="lightboxImg" class="lightbox-content" alt="Full view">
-</div>
-
-<script src="app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
