@@ -308,3 +308,99 @@ a.custom-link:hover,
     opacity: 1;
   }
 }
+/* ===== Welcoming Splash UI Animation ===== */
+.welcome-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: var(--bg);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), 
+              transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.welcome-overlay.hide-welcome {
+  opacity: 0;
+  transform: translateY(-20px) scale(1.02);
+  pointer-events: none;
+}
+
+.welcome-content {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+  animation: welcomePop 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.welcome-badge {
+  font-size: 0.85rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  padding: 0.25rem 0.9rem;
+  border-radius: 999px;
+  margin-bottom: 0.8rem;
+  font-weight: 600;
+}
+
+.welcome-name {
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.welcome-line {
+  width: 0;
+  height: 3px;
+  background: var(--accent);
+  border-radius: 99px;
+  margin: 0.8rem 0;
+  animation: lineExpand 0.7s 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.welcome-sub {
+  color: var(--muted);
+  font-size: 1.05rem;
+  margin: 0;
+  letter-spacing: 0.04em;
+}
+
+/* Staggered Entrance for CV Content */
+#cv section {
+  animation: sectionEntrance 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes welcomePop {
+  0% {
+    opacity: 0;
+    transform: scale(0.92) translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes lineExpand {
+  0% { width: 0; }
+  100% { width: 64px; }
+}
+
+@keyframes sectionEntrance {
+  0% {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

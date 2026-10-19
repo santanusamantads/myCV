@@ -1,6 +1,6 @@
 /* ===== Dynamic CV =====
    Data priority: browser localStorage (your edits)  >  data.json (published)  >  DEFAULTS below. */
-const KEY = 'cv-data-v7';
+const KEY = 'cv-data-v8';
 
 const DEFAULT_ORDER = ['about', 'links', 'experience', 'education', 'skills', 'projects', 'certifications', 'languages'];
 
@@ -44,7 +44,7 @@ const DEFAULTS = {
     { name: 'Bengali', showLevel: false, level: 95 },
     { name: 'Hindi', showLevel: false, level: 85 }
   ],
-  disabledLinks: [], // Array of URLs currently unchecked/disabled
+  disabledLinks: [],
   customSections: [],
   settings: {
     accent: '#2563eb',
@@ -82,7 +82,7 @@ function parseLinks(raw) {
   return escaped.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, label, url) => {
     const valid = safeUrl(url);
     if (!valid || disabled.includes(url)) {
-      return label; // Render as plain text if disabled
+      return label;
     }
     return `<a href="${esc(valid)}" target="_blank" rel="noopener" class="custom-link">${label}</a>`;
   });
@@ -360,7 +360,6 @@ function buildEditor() {
         return `<label>${label}</label><input id="${fieldId}" type="text" value="${esc(item[f])}" data-list="${k}" data-i="${i}" data-f="${f}">`;
       }).join('');
 
-      // Per-entry single link builder
       if (isTextBased) {
         cardContent += entryLinkHelperHtml(entryScopeId);
       }
@@ -570,7 +569,6 @@ function wireEditor() {
       if (box) box.style.display = t.checked ? 'block' : 'none';
       save(); render();
     } else if (t.dataset.act === 'toggle-link-status') {
-      // 1-Click disable or enable link
       const url = t.dataset.url;
       if (!data.disabledLinks) data.disabledLinks = [];
       if (!t.checked) {
@@ -601,7 +599,6 @@ function wireEditor() {
   body.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
 
-    // Single link creator per entry (scans all inputs inside the entry)
     if (b.dataset.act === 'apply-entry-link') {
       const scopeId = b.dataset.scope;
       const lblEl = document.getElementById(`lh-label-${scopeId}`);
@@ -617,14 +614,12 @@ function wireEditor() {
       }
 
       if (scopeContainer) {
-        // Collect all textareas and inputs inside this entry
         const fields = [...scopeContainer.querySelectorAll('textarea, input[type="text"]')].filter(el => !el.id.startsWith('lh-'));
         
         let found = false;
         const escapedPattern = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const regex = new RegExp(escapedPattern, 'i');
 
-        // Check if user selected text in any field
         for (const f of fields) {
           const start = f.selectionStart;
           const end = f.selectionEnd;
@@ -637,7 +632,6 @@ function wireEditor() {
           }
         }
 
-        // If no selection, search for the label across the entry's fields
         if (!found) {
           if (!label) {
             alert('Highlight text inside this entry or type the exact text to link in the Label field.');
@@ -665,7 +659,6 @@ function wireEditor() {
       return;
     }
 
-    // Completely remove link markdown from section data
     if (b.dataset.act === 'remove-markdown-link') {
       const label = b.dataset.label;
       const url = b.dataset.url;
@@ -805,6 +798,15 @@ async function load() {
       photoModal.hidden = true;
     }
   });
+
+  /* ----- Welcoming Intro Animation Handler ----- */
+  const splash = $('#welcomeSplash');
+  if (splash) {
+    setTimeout(() => {
+      splash.classList.add('hide-welcome');
+      setTimeout(() => splash.remove(), 600);
+    }, 1400);
+  }
 
   wireEditor();
 })();
