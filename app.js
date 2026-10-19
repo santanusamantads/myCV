@@ -1,6 +1,6 @@
 /* ===== Dynamic CV =====
    Data priority: browser localStorage (your edits)  >  data.json (published)  >  DEFAULTS below. */
-const KEY = 'cv-data-v5';
+const KEY = 'cv-data-v6';
 
 const DEFAULT_ORDER = ['about', 'links', 'experience', 'education', 'skills', 'projects', 'certifications', 'languages'];
 
@@ -298,7 +298,11 @@ function buildEditor() {
                   <textarea id="${fieldId}" data-list="${k}" data-i="${i}" data-f="${f}">${esc(item[f])}</textarea>
                   ${linkHelperHtml(fieldId)}`;
         }
-        return `<label>${label}</label><input id="${fieldId}" type="text" value="${esc(item[f])}" data-list="${k}" data-i="${i}" data-f="${f}">`;
+        
+        // Attach link helper to school, company, degree, and role fields
+        const needsLinkHelper = ['school', 'company', 'degree', 'role'].includes(f);
+        return `<label>${label}</label><input id="${fieldId}" type="text" value="${esc(item[f])}" data-list="${k}" data-i="${i}" data-f="${f}">
+                ${needsLinkHelper ? linkHelperHtml(fieldId) : ''}`;
       }).join('');
 
       if (k === 'skills' || k === 'languages') {
@@ -360,10 +364,14 @@ function buildEditor() {
     } else {
       h += (c.items || []).map((item, i) => {
         const detailsId = `cust-details-${cIdx}-${i}`;
+        const titleId = `cust-title-${cIdx}-${i}`;
+        const subtitleId = `cust-subtitle-${cIdx}-${i}`;
         return `
         <div class="card">
-          <label>Title</label><input type="text" value="${esc(item.title)}" data-cust-list="${cIdx}" data-i="${i}" data-f="title">
-          <label>Subtitle / Issuer / Org</label><input type="text" value="${esc(item.subtitle)}" data-cust-list="${cIdx}" data-i="${i}" data-f="subtitle">
+          <label>Title</label><input id="${titleId}" type="text" value="${esc(item.title)}" data-cust-list="${cIdx}" data-i="${i}" data-f="title">
+          ${linkHelperHtml(titleId)}
+          <label>Subtitle / Issuer / Org</label><input id="${subtitleId}" type="text" value="${esc(item.subtitle)}" data-cust-list="${cIdx}" data-i="${i}" data-f="subtitle">
+          ${linkHelperHtml(subtitleId)}
           <label>Period / Year</label><input type="text" value="${esc(item.period)}" data-cust-list="${cIdx}" data-i="${i}" data-f="period">
           <label>Details (one bullet per line)</label>
           <textarea id="${detailsId}" data-cust-list="${cIdx}" data-i="${i}" data-f="details">${esc(item.details)}</textarea>
