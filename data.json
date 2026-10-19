@@ -26,7 +26,7 @@
   "experience": [],
   "education": [
     {
-      "degree": "M.Sc. in Data Science and Artificial Intelligence",
+      "degree": "M.Sc. in DSAI",
       "school": "Ramakrishna Mission Vivekananda Educational and Research Institute ([RKMVERI](https://rkmvu.ac.in/))",
       "period": "2026 – Present",
       "details": "Focus on Machine Learning, Statistical Inference, and AI"
@@ -46,13 +46,13 @@
     {
       "degree": "Secondary  (Class X)",
       "school": "Nabin Manua Iswar Chandra High School (WBBSE)",
-      "period": "2015– 2021",
+      "period": "2015 – 2021",
       "details": "Marks: 621/700 (88.71%) "
     },
     {
-      "degree": "Class I  - Class IV",
+      "degree": "Class I  -  Class IV",
       "school": "Sitapur Board Primary School",
-      "period": "2011-2014",
+      "period": "2011 - 2014",
       "details": ""
     }
   ],
@@ -116,13 +116,14 @@
     "accent": "#2563eb",
     "linkColor": "#485d65",
     "theme": "dark",
-    "sidebarLayout": "left",
+    "sidebarLayout": "none",
     "sidebarSections": [
       "skills",
       "languages",
       "links"
     ],
     "linksPlacement": "profile",
+    "showDownloadBtn": true,
     "order": [
       "about",
       "links",
