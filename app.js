@@ -1,6 +1,6 @@
 /* ===== Dynamic CV =====
    Data priority: browser localStorage (your edits)  >  data.json (published)  >  DEFAULTS below. */
-const KEY = 'cv-data-v8';
+const KEY = 'cv-data-v9';
 
 const DEFAULT_ORDER = ['about', 'links', 'experience', 'education', 'skills', 'projects', 'certifications', 'languages'];
 
@@ -799,13 +799,23 @@ async function load() {
     }
   });
 
-  /* ----- Welcoming Intro Animation Handler ----- */
+  /* ----- Professional Welcoming Intro Animation Handler ----- */
   const splash = $('#welcomeSplash');
+  const splashImg = $('#welcomePhoto');
+
   if (splash) {
+    if (splashImg) {
+      if (data.profile && data.profile.photo) {
+        splashImg.src = data.profile.photo;
+      } else {
+        splashImg.style.display = 'none';
+      }
+    }
+
     setTimeout(() => {
       splash.classList.add('hide-welcome');
-      setTimeout(() => splash.remove(), 600);
-    }, 1400);
+      setTimeout(() => splash.remove(), 700);
+    }, 1800);
   }
 
   wireEditor();
