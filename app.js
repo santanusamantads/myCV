@@ -1,6 +1,6 @@
 /* ===== Dynamic CV =====
    Data priority: browser localStorage (your edits)  >  data.json (published)  >  DEFAULTS below. */
-const KEY = 'cv-data-v6';
+const KEY = 'cv-data-v7';
 
 const DEFAULT_ORDER = ['about', 'links', 'experience', 'education', 'skills', 'projects', 'certifications', 'languages'];
 
@@ -22,8 +22,8 @@ const DEFAULTS = {
   about: 'I am a first-semester M.Sc. Data Science and Artificial Intelligence student at Ramakrishna Mission Vivekananda Educational and Research Institute (RKMVERI), with a foundational background in Physics from RKMVCC Rahara. My academic interests center around statistical inference, mathematical optimization, linear algebra, and data structures & algorithms. I actively focus on building machine learning algorithms from scratch—including KNN and multi-class Logistic Regression with gradient descent optimization—and applying regularized predictive modeling (LASSO) to complex datasets.',
   experience: [],
   education: [
-    { degree: 'M.Sc. in Data Science and Artificial Intelligence', school: 'Ramakrishna Mission Vivekananda Educational and Research Institute (RKMVERI)', period: '2026 – Present', details: 'Focus on Machine Learning, Statistical Inference, and AI' },
-    { degree: 'B.Sc. in Physics', school: 'Ramakrishna Mission Vivekananda Centenary College (RKMVCC), Rahara', period: '2023 – 2026', details: 'CGPA: 7.24/10 (66.97%)' },
+    { degree: 'M.Sc. in Data Science and Artificial Intelligence', school: 'Ramakrishna Mission Vivekananda Educational and Research Institute ([RKMVERI](https://rkmvu.ac.in/))', period: '2026 – Present', details: 'Focus on Machine Learning, Statistical Inference, and AI' },
+    { degree: 'B.Sc. in Physics', school: 'Ramakrishna Mission Vivekananda Centenary College ([RKMVCC](https://rkmvccrahara.org/)), Rahara', period: '2023 – 2026', details: 'CGPA: 7.24/10 (66.97%)' },
     { degree: 'Higher Secondary (Class XII) - Science', school: 'Rampur Manua K.K.I.R.R Institution (WBCHSE)', period: '2021 – 2023', details: 'Marks: 398/500 (79.6%)' },
     { degree: 'Secondary  (Class X)', school: 'Nabin Manua Iswar Chandra High School (WBBSE)', period: '2015– 2021', details: 'Marks: 621/700 (88.71%)' },
     { degree: 'Class I  - Class IV', school: 'Sitapur Board Primary School', period: '2011-2014', details: '' }
@@ -44,6 +44,7 @@ const DEFAULTS = {
     { name: 'Bengali', showLevel: false, level: 95 },
     { name: 'Hindi', showLevel: false, level: 85 }
   ],
+  disabledLinks: [], // Array of URLs currently unchecked/disabled
   customSections: [],
   settings: {
     accent: '#2563eb',
@@ -73,14 +74,32 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 const safeUrl = u => /^(https?:|mailto:|tel:)/i.test(u || '') ? u : (u && /^[\w.-]+\.[a-z]{2,}/i.test(u) ? 'https://' + u : '');
 const lines = t => String(t || '').split('\n').map(s => s.trim()).filter(Boolean);
 
-/* Parse text with markdown links [label](url) using the dedicated clickable link color */
+/* Parse text with markdown links [label](url), checking if the link is disabled */
 function parseLinks(raw) {
   if (!raw) return '';
   const escaped = esc(raw);
+  const disabled = data.disabledLinks || [];
   return escaped.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, label, url) => {
     const valid = safeUrl(url);
-    return valid ? `<a href="${esc(valid)}" target="_blank" rel="noopener" class="custom-link">${label}</a>` : label;
+    if (!valid || disabled.includes(url)) {
+      return label; // Render as plain text if disabled
+    }
+    return `<a href="${esc(valid)}" target="_blank" rel="noopener" class="custom-link">${label}</a>`;
   });
+}
+
+/* Extract all [label](url) pairs from an object or string */
+function extractLinksFromData(obj) {
+  const found = [];
+  const str = JSON.stringify(obj || {});
+  const regex = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g;
+  let match;
+  while ((match = regex.exec(str)) !== null) {
+    if (!found.some(item => item.label === match[1] && item.url === match[2])) {
+      found.push({ label: match[1], url: match[2] });
+    }
+  }
+  return found;
 }
 
 const merge = (base, over) => {
@@ -103,6 +122,7 @@ function getSectionTitle(k) {
 
 function syncOrderAndShow() {
   if (!data.customSections) data.customSections = [];
+  if (!data.disabledLinks) data.disabledLinks = [];
   if (!data.settings.order) data.settings.order = [...DEFAULT_ORDER];
   if (!data.settings.show) data.settings.show = {};
 
@@ -122,16 +142,47 @@ function getLinksChips() {
   }).join('');
 }
 
-/* Helper to render the Phrase to Link Box in the editor */
-function linkHelperHtml(targetId) {
+/* Single link-builder box for an entry */
+function entryLinkHelperHtml(scopeId) {
   return `
-    <div class="link-helper-box">
-      <div style="font-weight:600; font-size:0.75rem; color:var(--muted);">🔗 Make text into a link</div>
-      <label>Portion of text to link (Label)</label>
-      <input type="text" id="lh-label-${targetId}" placeholder="e.g. RKMVERI">
-      <label>URL</label>
-      <input type="text" id="lh-url-${targetId}" placeholder="https://...">
-      <button type="button" data-act="apply-link" data-target="${targetId}">Insert Link</button>
+    <div class="link-helper-box" style="margin-top:0.8rem; border-top:1px dashed var(--line); padding-top:0.6rem;">
+      <div style="font-weight:600; font-size:0.75rem; color:var(--muted); margin-bottom:0.3rem;">🔗 Make text into a link in this entry</div>
+      <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+        <div style="flex:1; min-width:140px;">
+          <input type="text" id="lh-label-${scopeId}" placeholder="Text to link (e.g. RKMVERI)" style="font-size:0.82rem; padding:0.3rem 0.5rem;">
+        </div>
+        <div style="flex:1; min-width:140px;">
+          <input type="text" id="lh-url-${scopeId}" placeholder="URL (https://...)" style="font-size:0.82rem; padding:0.3rem 0.5rem;">
+        </div>
+        <button type="button" data-act="apply-entry-link" data-scope="${scopeId}" style="padding:0.3rem 0.8rem; font-size:0.82rem;">Insert Link</button>
+      </div>
+    </div>
+  `;
+}
+
+/* Section-level link record checklist */
+function sectionLinksRecordHtml(secKey, links) {
+  if (!links || !links.length) return '';
+  const disabled = data.disabledLinks || [];
+  return `
+    <div class="section-links-record" style="margin:0.8rem 0; padding:0.6rem 0.8rem; background:rgba(128,128,128,0.06); border:1px solid var(--line); border-radius:8px;">
+      <div style="font-size:0.75rem; font-weight:600; color:var(--muted); text-transform:uppercase; margin-bottom:0.4rem;">
+        Active Links in this Section (${links.length})
+      </div>
+      <div style="display:flex; flex-direction:column; gap:0.35rem;">
+        ${links.map(l => {
+          const isChecked = !disabled.includes(l.url);
+          return `
+            <div style="display:flex; align-items:center; justify-content:space-between; font-size:0.85rem;">
+              <label class="switch" style="margin:0; cursor:pointer;">
+                <input type="checkbox" data-act="toggle-link-status" data-url="${esc(l.url)}" ${isChecked ? 'checked' : ''}>
+                <span><strong>${esc(l.label)}</strong> <span style="font-size:0.75rem; color:var(--muted);">(${esc(l.url.replace(/^https?:\/\//, ''))})</span></span>
+              </label>
+              <button type="button" data-act="remove-markdown-link" data-sec="${secKey}" data-label="${esc(l.label)}" data-url="${esc(l.url)}" title="Remove link completely" style="padding:1px 6px; font-size:0.75rem; border:none; background:transparent; cursor:pointer; color:#d92d20;">✕</button>
+            </div>
+          `;
+        }).join('')}
+      </div>
     </div>
   `;
 }
@@ -283,27 +334,36 @@ function buildEditor() {
     <label>Short summary</label><input type="text" value="${esc(p.summary)}" data-p="summary">
     ${input('Email', p.email, 'data-p="email"')}${input('Phone', p.phone, 'data-p="phone"')}${input('Location', p.location, 'data-p="location"')}</details>`;
 
+  // About Section with entry link tool + link record checklist
+  const aboutLinks = extractLinksFromData(data.about);
   h += `<details><summary>About</summary>
-    <label>About me</label>
-    <textarea id="ta-about" data-about>${esc(data.about)}</textarea>
-    ${linkHelperHtml('ta-about')}
+    <div id="card-about" class="entry-scope-box">
+      <label>About me</label>
+      <textarea id="ta-about" data-about>${esc(data.about)}</textarea>
+      ${entryLinkHelperHtml('about')}
+    </div>
+    ${sectionLinksRecordHtml('about', aboutLinks)}
   </details>`;
 
+  // Standard List Sections
   for (const [k, def] of Object.entries(LISTS)) {
+    const sectionLinks = extractLinksFromData(data[k]);
+    const isTextBased = ['education', 'experience', 'projects', 'certifications'].includes(k);
+
     h += `<details><summary>${def.title}</summary>` + data[k].map((item, i) => {
+      const entryScopeId = `entry-${k}-${i}`;
       let cardContent = def.fields.map(([f, label, type]) => {
         const fieldId = `field-${k}-${i}-${f}`;
         if (type === 'area') {
-          return `<label>${label}</label>
-                  <textarea id="${fieldId}" data-list="${k}" data-i="${i}" data-f="${f}">${esc(item[f])}</textarea>
-                  ${linkHelperHtml(fieldId)}`;
+          return `<label>${label}</label><textarea id="${fieldId}" data-list="${k}" data-i="${i}" data-f="${f}">${esc(item[f])}</textarea>`;
         }
-        
-        // Attach link helper to school, company, degree, and role fields
-        const needsLinkHelper = ['school', 'company', 'degree', 'role'].includes(f);
-        return `<label>${label}</label><input id="${fieldId}" type="text" value="${esc(item[f])}" data-list="${k}" data-i="${i}" data-f="${f}">
-                ${needsLinkHelper ? linkHelperHtml(fieldId) : ''}`;
+        return `<label>${label}</label><input id="${fieldId}" type="text" value="${esc(item[f])}" data-list="${k}" data-i="${i}" data-f="${f}">`;
       }).join('');
+
+      // Per-entry single link builder
+      if (isTextBased) {
+        cardContent += entryLinkHelperHtml(entryScopeId);
+      }
 
       if (k === 'skills' || k === 'languages') {
         const isChecked = !!item.showLevel;
@@ -321,12 +381,16 @@ function buildEditor() {
         `;
       }
 
-      return `<div class="card">${cardContent}<div class="tools"><button data-act="up" data-list="${k}" data-i="${i}">↑</button><button data-act="down" data-list="${k}" data-i="${i}">↓</button><button data-act="del" data-list="${k}" data-i="${i}">Delete</button></div></div>`;
+      return `<div class="card entry-scope-box" id="${entryScopeId}">${cardContent}<div class="tools"><button data-act="up" data-list="${k}" data-i="${i}">↑</button><button data-act="down" data-list="${k}" data-i="${i}">↓</button><button data-act="del" data-list="${k}" data-i="${i}">Delete</button></div></div>`;
     }).join('')
-    + `<button data-act="add" data-list="${k}">+ Add ${def.title.toLowerCase()} entry</button></details>`;
+    + `<button data-act="add" data-list="${k}">+ Add ${def.title.toLowerCase()} entry</button>
+       ${sectionLinksRecordHtml(k, sectionLinks)}
+    </details>`;
   }
 
+  // Custom Sections
   (data.customSections || []).forEach((c, cIdx) => {
+    const customLinks = extractLinksFromData(c.items);
     h += `<details><summary>✦ ${esc(c.title)} (Custom)</summary>
       <div style="padding:0.4rem 0; border-bottom:1px solid var(--line); margin-bottom:0.6rem;">
         <label>Section Title</label>
@@ -363,19 +427,15 @@ function buildEditor() {
       `).join('');
     } else {
       h += (c.items || []).map((item, i) => {
-        const detailsId = `cust-details-${cIdx}-${i}`;
-        const titleId = `cust-title-${cIdx}-${i}`;
-        const subtitleId = `cust-subtitle-${cIdx}-${i}`;
+        const entryScopeId = `entry-cust-${cIdx}-${i}`;
         return `
-        <div class="card">
-          <label>Title</label><input id="${titleId}" type="text" value="${esc(item.title)}" data-cust-list="${cIdx}" data-i="${i}" data-f="title">
-          ${linkHelperHtml(titleId)}
-          <label>Subtitle / Issuer / Org</label><input id="${subtitleId}" type="text" value="${esc(item.subtitle)}" data-cust-list="${cIdx}" data-i="${i}" data-f="subtitle">
-          ${linkHelperHtml(subtitleId)}
+        <div class="card entry-scope-box" id="${entryScopeId}">
+          <label>Title</label><input type="text" value="${esc(item.title)}" data-cust-list="${cIdx}" data-i="${i}" data-f="title">
+          <label>Subtitle / Issuer / Org</label><input type="text" value="${esc(item.subtitle)}" data-cust-list="${cIdx}" data-i="${i}" data-f="subtitle">
           <label>Period / Year</label><input type="text" value="${esc(item.period)}" data-cust-list="${cIdx}" data-i="${i}" data-f="period">
           <label>Details (one bullet per line)</label>
-          <textarea id="${detailsId}" data-cust-list="${cIdx}" data-i="${i}" data-f="details">${esc(item.details)}</textarea>
-          ${linkHelperHtml(detailsId)}
+          <textarea data-cust-list="${cIdx}" data-i="${i}" data-f="details">${esc(item.details)}</textarea>
+          ${entryLinkHelperHtml(entryScopeId)}
           <div class="tools">
             <button data-act="cust-item-up" data-cidx="${cIdx}" data-i="${i}">↑</button>
             <button data-act="cust-item-down" data-cidx="${cIdx}" data-i="${i}">↓</button>
@@ -385,14 +445,16 @@ function buildEditor() {
       `}).join('');
     }
 
-    h += `<button data-act="add-custom-item" data-cidx="${cIdx}">+ Add entry to ${esc(c.title)}</button></details>`;
+    h += `<button data-act="add-custom-item" data-cidx="${cIdx}">+ Add entry to ${esc(c.title)}</button>
+          ${sectionLinksRecordHtml(`cust-${cIdx}`, customLinks)}
+        </details>`;
   });
 
   h += `<div style="margin: 1rem 0;">
     <button data-act="add-new-section" style="width:100%; padding:0.6rem; font-weight:600; border-style:dashed;">+ Add Custom Section</button>
   </div>`;
 
-  // Appearance & Layout with side-by-side Accent & Clickable text color pickers
+  // Appearance & Layout
   h += `<details><summary>Appearance & layout</summary>
     <div style="display:flex; gap:1rem; align-items:center;">
       <div style="flex:1;">
@@ -507,6 +569,16 @@ function wireEditor() {
       const box = document.getElementById(`cust-lvl-box-${cIdx}-${i}`);
       if (box) box.style.display = t.checked ? 'block' : 'none';
       save(); render();
+    } else if (t.dataset.act === 'toggle-link-status') {
+      // 1-Click disable or enable link
+      const url = t.dataset.url;
+      if (!data.disabledLinks) data.disabledLinks = [];
+      if (!t.checked) {
+        if (!data.disabledLinks.includes(url)) data.disabledLinks.push(url);
+      } else {
+        data.disabledLinks = data.disabledLinks.filter(u => u !== url);
+      }
+      save(); render();
     } else if ('customType' in t.dataset) {
       const cIdx = +t.dataset.customType;
       data.customSections[cIdx].type = t.value;
@@ -529,11 +601,12 @@ function wireEditor() {
   body.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
 
-    if (b.dataset.act === 'apply-link') {
-      const targetId = b.dataset.target;
-      const lblEl = document.getElementById(`lh-label-${targetId}`);
-      const urlEl = document.getElementById(`lh-url-${targetId}`);
-      const txtEl = document.getElementById(targetId);
+    // Single link creator per entry (scans all inputs inside the entry)
+    if (b.dataset.act === 'apply-entry-link') {
+      const scopeId = b.dataset.scope;
+      const lblEl = document.getElementById(`lh-label-${scopeId}`);
+      const urlEl = document.getElementById(`lh-url-${scopeId}`);
+      const scopeContainer = document.getElementById(scopeId === 'about' ? 'card-about' : scopeId);
 
       const url = (urlEl?.value || '').trim();
       let label = (lblEl?.value || '').trim();
@@ -543,30 +616,76 @@ function wireEditor() {
         return;
       }
 
-      if (txtEl) {
-        const start = txtEl.selectionStart;
-        const end = txtEl.selectionEnd;
-        if (start !== undefined && start !== end) {
-          const selectedText = txtEl.value.substring(start, end);
-          txtEl.value = txtEl.value.substring(0, start) + `[${selectedText}](${url})` + txtEl.value.substring(end);
-        } else if (label) {
-          const escapedPattern = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          const regex = new RegExp(escapedPattern, 'i');
-          if (regex.test(txtEl.value)) {
-            txtEl.value = txtEl.value.replace(regex, match => `[${match}](${url})`);
-          } else {
-            alert(`The phrase "${label}" was not found in the field above.`);
+      if (scopeContainer) {
+        // Collect all textareas and inputs inside this entry
+        const fields = [...scopeContainer.querySelectorAll('textarea, input[type="text"]')].filter(el => !el.id.startsWith('lh-'));
+        
+        let found = false;
+        const escapedPattern = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(escapedPattern, 'i');
+
+        // Check if user selected text in any field
+        for (const f of fields) {
+          const start = f.selectionStart;
+          const end = f.selectionEnd;
+          if (start !== undefined && start !== end) {
+            const selectedText = f.value.substring(start, end);
+            f.value = f.value.substring(0, start) + `[${selectedText}](${url})` + f.value.substring(end);
+            f.dispatchEvent(new Event('input', { bubbles: true }));
+            found = true;
+            break;
+          }
+        }
+
+        // If no selection, search for the label across the entry's fields
+        if (!found) {
+          if (!label) {
+            alert('Highlight text inside this entry or type the exact text to link in the Label field.');
             return;
           }
-        } else {
-          alert('Highlight a portion of text or type the exact phrase in the Label field.');
+          for (const f of fields) {
+            if (regex.test(f.value)) {
+              f.value = f.value.replace(regex, match => `[${match}](${url})`);
+              f.dispatchEvent(new Event('input', { bubbles: true }));
+              found = true;
+              break;
+            }
+          }
+        }
+
+        if (!found) {
+          alert(`The phrase "${label}" was not found in any text field of this entry.`);
           return;
         }
 
-        txtEl.dispatchEvent(new Event('input', { bubbles: true }));
         if (lblEl) lblEl.value = '';
         if (urlEl) urlEl.value = '';
+        buildEditor();
       }
+      return;
+    }
+
+    // Completely remove link markdown from section data
+    if (b.dataset.act === 'remove-markdown-link') {
+      const label = b.dataset.label;
+      const url = b.dataset.url;
+      const targetStr = `[${label}](${url})`;
+
+      const cleanObj = obj => {
+        for (const k in obj) {
+          if (typeof obj[k] === 'string') {
+            obj[k] = obj[k].replaceAll(targetStr, label);
+          } else if (typeof obj[k] === 'object' && obj[k] !== null) {
+            cleanObj(obj[k]);
+          }
+        }
+      };
+
+      cleanObj(data);
+      if (data.disabledLinks) {
+        data.disabledLinks = data.disabledLinks.filter(u => u !== url);
+      }
+      save(); render(); buildEditor();
       return;
     }
 
