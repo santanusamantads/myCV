@@ -90,6 +90,13 @@
       "link": "",
       "description": "Built a regression workflow using polynomial features to model non-linear relationships and applied LASSO (L1) regularization.",
       "tech": "Python"
+    },
+    {
+      "title": "SGEMM GPU Kernel Performance & SGD",
+      "description": "Stochastic Gradient Descent (SGD) implementation from scratch (Random With Replacement vs. Random Without Replacement) on the SGEMM GPU Kernel Performance dataset across various batch sizes.",
+      "tags": ["Python", "NumPy", "Jupyter"],
+      "link": "sgemm.html",
+      "github": "https://github.com/santanusamantads/SGEMM-GPU-Kernel-Performance-SGD"
     }
   ],
   "certifications": [],
